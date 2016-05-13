@@ -1,0 +1,15 @@
+
+
+<form action="jsp/site/Portal.jsp" method="post" >
+    <input type="hidden" name="page" value="mobilecertifier" >
+    <input type="hidden" name="action" value="certify" >
+    <h1>#i18n{module.identitystore.mobilecertifier.home.pageTitle}</h1>
+ 
+    <@messages errors=errors />
+    
+    #i18n{module.identitystore.mobilecertifier.home.labelMobileNumber} :
+    <input type="text" name="mobile_number">
+    <button class="btn btn-primary" type="submit">
+        #i18n{module.identitystore.mobilecertifier.home.buttonSubmit}
+    </button>
+</form>
