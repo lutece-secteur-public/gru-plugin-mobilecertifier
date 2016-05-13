@@ -37,9 +37,14 @@ import fr.paris.lutece.plugins.identitystore.business.AttributeCertifier;
 import fr.paris.lutece.plugins.identitystore.business.AttributeCertifierHome;
 import fr.paris.lutece.plugins.identitystore.service.ChangeAuthor;
 import fr.paris.lutece.plugins.identitystore.service.IdentityStoreService;
+import fr.paris.lutece.plugins.librarynotifygru.business.mobilecertifier.CertifierBySMS;
+import fr.paris.lutece.plugins.librarynotifygru.services.SendNotificationAsJson;
+import fr.paris.lutece.portal.service.i18n.I18nService;
 import fr.paris.lutece.portal.service.security.LuteceUser;
 import fr.paris.lutece.portal.service.security.SecurityService;
 import fr.paris.lutece.portal.service.security.UserNotSignedException;
+import fr.paris.lutece.portal.service.util.AppException;
+import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 
 import org.apache.commons.lang.RandomStringUtils;
@@ -62,12 +67,17 @@ public final class MobileCertifierService
     private static final String MESSAGE_SESSION_EXPIRED = "module.identitystore.mobilecertifier.message.validation.sessionExpired";
     private static final String MESSAGE_CODE_EXPIRED = "module.identitystore.mobilecertifier.message.validation.codeExpired";
     private static final String MESSAGE_TOO_MANY_ATTEMPS = "module.identitystore.mobilecertifier.message.validation.tooManyAttempts";
+    private static final String MESSAGE_SMS_VALIDATION_TEXT = "module.identitystore.mobilecertifier.message.validation.smsValidationText";
     private static final String PROPERTY_CODE_LENGTH = "identitystore.mobilecertifier.codeLength";
     private static final String PROPERTY_EXPIRES_DELAY = "identitystore.mobilecertifier.expiresDelay";
     private static final String PROPERTY_MAX_ATTEMPTS = "identitystore.mobilecertifier.maxAttempts";
     private static final String PROPERTY_MOCKED_CONNECTION_ID = "identitystore.mobilecertifier.mockedConnectionId";
+    private static final String PROPERTY_API_MANAGER_ENABLED = "identitystore.mobilecertifier.apiManager.enabled";
     private static final String PROPERTY_ATTRIBUTE = "identitystore.mobilecertifier.attribute";
     private static final String PROPERTY_CERTIFIER_CODE = "identitystore.mobilecertifier.certifierCode";
+    private static final String PROPERTY_CREDENTIAL_CLIENT_API_MANAGER = "identitystore.mobilecertifier.apiManagerCredential";
+    private static final String PROPERTY_SMS_NOTIFIER_ENDPOINT_URL = "identitystore.mobilecertifier.smsNotifierUrl";
+    
     private static final String DEFAULT_ATTRIBUTE_NAME = "mobile_phone";
     private static final String DEFAULT_CERTIFIER_CODE = "mobilecertifier";
     private static final String DEFAULT_CONNECTION_ID = "1";
@@ -106,8 +116,28 @@ public final class MobileCertifierService
         throws UserNotSignedException
     {
         String strValidationCode = generateValidationCode(  );
-        System.out.println( "\nVALIDATION CODE : " + strValidationCode );
 
+        if ( AppPropertiesService.getPropertyBoolean( PROPERTY_API_MANAGER_ENABLED, true ) )
+        {
+            CertifierBySMS certificatSMS = new CertifierBySMS (  );
+            certificatSMS.setMessage( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_TEXT, new String[  ] { strValidationCode }, request.getLocale( ) ) );
+            certificatSMS.setPhoneNumber( strMobileNumber );
+            SendNotificationAsJson senderEndPoint = SendNotificationAsJson.instance(  );
+    
+            String strNotifyGruCredential = AppPropertiesService.getProperty( PROPERTY_CREDENTIAL_CLIENT_API_MANAGER, "" );
+            String strUrl = AppPropertiesService.getProperty( PROPERTY_SMS_NOTIFIER_ENDPOINT_URL  );
+            String strToken = senderEndPoint.getToken( strNotifyGruCredential );            
+              
+            Map<String, String> headers = new HashMap<String, String>(  );            
+    
+            senderEndPoint.send( certificatSMS, strToken, headers, strUrl );    
+        }
+        else
+        {
+            //mock mode => validation code is logged on file
+            AppLogService.info( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_TEXT, new String[  ] { strValidationCode }, request.getLocale( )  ) );
+        }
+        
         HttpSession session = request.getSession( true );
         ValidationInfos infos = new ValidationInfos(  );
         infos.setValidationCode( strValidationCode );

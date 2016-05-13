@@ -36,6 +36,7 @@ package fr.paris.lutece.plugins.identitystore.modules.mobilecertifier.web;
 import fr.paris.lutece.plugins.identitystore.modules.mobilecertifier.service.MobileCertifierService;
 import fr.paris.lutece.plugins.identitystore.modules.mobilecertifier.service.MobileCertifierService.ValidationResult;
 import fr.paris.lutece.portal.service.security.UserNotSignedException;
+import fr.paris.lutece.portal.service.util.AppException;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import fr.paris.lutece.portal.util.mvc.commons.annotations.Action;
 import fr.paris.lutece.portal.util.mvc.commons.annotations.View;
@@ -70,6 +71,7 @@ public class MobileCertifierApp extends MVCApplication
     private static final String PATTERN_PHONE = "(\\d{10})$";
     private static final String PROPERTY_PATTERN = "module.identitystore.mobilecertifier.numbervalidation.regexp";
     private static final String MESSAGE_KEY_INVALID_NUMBER = "module.identitystore.mobilecertifier.message.invalidNumber";
+    private static final String MESSAGE_CODE_VALIDATION_SEND_ERROR = "module.identitystore.mobilecertifier.message.codeValidationSendError";
 
     /**
      * Gets the Home page
@@ -98,12 +100,20 @@ public class MobileCertifierApp extends MVCApplication
 
         if ( strErrorKey != null )
         {
-            addError( strErrorKey, LocaleService.getDefault(  ) );
+            addError( strErrorKey, request.getLocale(  ) );
 
             return redirectView( request, VIEW_HOME );
         }
-
-        MobileCertifierService.startValidation( request, strMobileNumber );
+        try 
+        {
+            MobileCertifierService.startValidation( request, strMobileNumber );
+        } 
+        catch ( AppException appEx ) 
+        {
+            addError( MESSAGE_CODE_VALIDATION_SEND_ERROR , request.getLocale(  ) );
+            return redirectView( request, VIEW_HOME );
+            
+        }
 
         return redirectView( request, VIEW_VALIDATION_CODE );
     }
