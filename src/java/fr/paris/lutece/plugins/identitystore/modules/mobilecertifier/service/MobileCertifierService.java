@@ -51,6 +51,7 @@ import org.apache.commons.lang.RandomStringUtils;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -68,6 +69,7 @@ public final class MobileCertifierService
     private static final String MESSAGE_CODE_EXPIRED = "module.identitystore.mobilecertifier.message.validation.codeExpired";
     private static final String MESSAGE_TOO_MANY_ATTEMPS = "module.identitystore.mobilecertifier.message.validation.tooManyAttempts";
     private static final String MESSAGE_SMS_VALIDATION_TEXT = "module.identitystore.mobilecertifier.message.validation.smsValidationText";
+    private static final String MESSAGE_SMS_VALIDATION_CONFIRM_TEXT = "module.identitystore.mobilecertifier.message.validation.smsValidationConfirmText";
     private static final String PROPERTY_CODE_LENGTH = "identitystore.mobilecertifier.codeLength";
     private static final String PROPERTY_EXPIRES_DELAY = "identitystore.mobilecertifier.expiresDelay";
     private static final String PROPERTY_MAX_ATTEMPTS = "identitystore.mobilecertifier.maxAttempts";
@@ -191,7 +193,7 @@ public final class MobileCertifierService
         }
 
         _mapValidationCodes.remove( strKey );
-        certify( infos );
+        certify( infos, request.getLocale( ) );
 
         return ValidationResult.OK;
     }
@@ -199,8 +201,9 @@ public final class MobileCertifierService
     /**
      * Certify the attribute change
      * @param infos The validation infos
+     * @param locale the locale
      */
-    private static void certify( ValidationInfos infos )
+    private static void certify( ValidationInfos infos, Locale locale )
     {
         AttributeCertifier certifier = AttributeCertifierHome.findByCode( CERTIFIER_CODE );
         ChangeAuthor author = new ChangeAuthor(  );
@@ -210,6 +213,25 @@ public final class MobileCertifierService
         author.setUserName( "Author name not provided" );
         IdentityStoreService.setAttribute( infos.getUserConnectionId(  ), ATTRIBUTE_NAME, infos.getMobileNumber(  ),
             author, certifier );
+
+        if ( AppPropertiesService.getPropertyBoolean( PROPERTY_API_MANAGER_ENABLED, true ) )
+        {
+            CertifierBySMS certificatSMS = new CertifierBySMS (  );
+            certificatSMS.setMessage( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_CONFIRM_TEXT, locale ) );
+            certificatSMS.setPhoneNumber( infos.getMobileNumber( ) );
+            SendNotificationAsJson senderEndPoint = SendNotificationAsJson.instance(  );
+    
+            String strNotifyGruCredential = AppPropertiesService.getProperty( PROPERTY_CREDENTIAL_CLIENT_API_MANAGER, "" );
+            String strUrl = AppPropertiesService.getProperty( PROPERTY_SMS_NOTIFIER_ENDPOINT_URL );
+            String strToken = senderEndPoint.getToken( strNotifyGruCredential );
+            Map<String, String> headers = new HashMap<String, String>(  );
+            senderEndPoint.send( certificatSMS, strToken, headers, strUrl );
+        }
+        else
+        {
+            //mock mode => certification message is logged
+            AppLogService.info( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_CONFIRM_TEXT, locale ) );
+        }
     }
 
     /**
