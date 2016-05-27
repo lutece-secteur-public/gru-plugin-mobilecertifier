@@ -37,13 +37,13 @@ import fr.paris.lutece.plugins.identitystore.business.AttributeCertifier;
 import fr.paris.lutece.plugins.identitystore.business.AttributeCertifierHome;
 import fr.paris.lutece.plugins.identitystore.service.ChangeAuthor;
 import fr.paris.lutece.plugins.identitystore.service.IdentityStoreService;
-import fr.paris.lutece.plugins.librarynotifygru.business.mobilecertifier.CertifierBySMS;
+import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.NotifyGruGlobalNotification;
+import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.NotifyGruSMSNotification;
 import fr.paris.lutece.plugins.librarynotifygru.services.SendNotificationAsJson;
 import fr.paris.lutece.portal.service.i18n.I18nService;
 import fr.paris.lutece.portal.service.security.LuteceUser;
 import fr.paris.lutece.portal.service.security.SecurityService;
 import fr.paris.lutece.portal.service.security.UserNotSignedException;
-import fr.paris.lutece.portal.service.util.AppException;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 
@@ -79,7 +79,6 @@ public final class MobileCertifierService
     private static final String PROPERTY_CERTIFIER_CODE = "identitystore.mobilecertifier.certifierCode";
     private static final String PROPERTY_CREDENTIAL_CLIENT_API_MANAGER = "identitystore.mobilecertifier.apiManagerCredential";
     private static final String PROPERTY_SMS_NOTIFIER_ENDPOINT_URL = "identitystore.mobilecertifier.smsNotifierUrl";
-    
     private static final String DEFAULT_ATTRIBUTE_NAME = "mobile_phone";
     private static final String DEFAULT_CERTIFIER_CODE = "mobilecertifier";
     private static final String DEFAULT_CONNECTION_ID = "1";
@@ -121,25 +120,32 @@ public final class MobileCertifierService
 
         if ( AppPropertiesService.getPropertyBoolean( PROPERTY_API_MANAGER_ENABLED, true ) )
         {
-            CertifierBySMS certificatSMS = new CertifierBySMS (  );
-            certificatSMS.setMessage( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_TEXT, new String[  ] { strValidationCode }, request.getLocale( ) ) );
-            certificatSMS.setPhoneNumber( strMobileNumber );
+            NotifyGruGlobalNotification certifNotif = new NotifyGruGlobalNotification(  );
+            NotifyGruSMSNotification notifSMS = new NotifyGruSMSNotification(  );
+            notifSMS.setMessage( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_TEXT,
+                    new String[] { strValidationCode }, request.getLocale(  ) ) );
+            notifSMS.setPhoneNumber( strMobileNumber );
+            certifNotif.setGuid( getUserConnectionId( request ) );
+            certifNotif.setUserSMS( notifSMS );
+            certifNotif.setNotificationDate( new Date().getTime( ) );
+
             SendNotificationAsJson senderEndPoint = SendNotificationAsJson.instance(  );
-    
+
             String strNotifyGruCredential = AppPropertiesService.getProperty( PROPERTY_CREDENTIAL_CLIENT_API_MANAGER, "" );
-            String strUrl = AppPropertiesService.getProperty( PROPERTY_SMS_NOTIFIER_ENDPOINT_URL  );
-            String strToken = senderEndPoint.getToken( strNotifyGruCredential );            
-              
-            Map<String, String> headers = new HashMap<String, String>(  );            
-    
-            senderEndPoint.send( certificatSMS, strToken, headers, strUrl );    
+            String strUrl = AppPropertiesService.getProperty( PROPERTY_SMS_NOTIFIER_ENDPOINT_URL );
+            String strToken = senderEndPoint.getToken( strNotifyGruCredential );
+
+            Map<String, String> headers = new HashMap<String, String>(  );
+
+            senderEndPoint.send( certifNotif, strToken, headers, strUrl );
         }
         else
         {
             //mock mode => validation code is logged on file
-            AppLogService.info( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_TEXT, new String[  ] { strValidationCode }, request.getLocale( )  ) );
+            AppLogService.info( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_TEXT,
+                    new String[] { strValidationCode }, request.getLocale(  ) ) );
         }
-        
+
         HttpSession session = request.getSession( true );
         ValidationInfos infos = new ValidationInfos(  );
         infos.setValidationCode( strValidationCode );
@@ -193,7 +199,7 @@ public final class MobileCertifierService
         }
 
         _mapValidationCodes.remove( strKey );
-        certify( infos, request.getLocale( ) );
+        certify( infos, request.getLocale(  ) );
 
         return ValidationResult.OK;
     }
@@ -215,17 +221,23 @@ public final class MobileCertifierService
             author, certifier );
 
         if ( AppPropertiesService.getPropertyBoolean( PROPERTY_API_MANAGER_ENABLED, true ) )
-        {
-            CertifierBySMS certificatSMS = new CertifierBySMS (  );
-            certificatSMS.setMessage( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_CONFIRM_TEXT, locale ) );
-            certificatSMS.setPhoneNumber( infos.getMobileNumber( ) );
+        {           
+            NotifyGruGlobalNotification certifNotif = new NotifyGruGlobalNotification(  );
+            NotifyGruSMSNotification notifSMS = new NotifyGruSMSNotification(  );
+            notifSMS.setMessage( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_CONFIRM_TEXT, locale ) );
+            notifSMS.setPhoneNumber(  infos.getMobileNumber(  ) );
+            certifNotif.setGuid(  infos.getUserConnectionId( )  );
+            certifNotif.setUserSMS( notifSMS );
+            certifNotif.setNotificationDate( new Date().getTime( ) );
+            
+
             SendNotificationAsJson senderEndPoint = SendNotificationAsJson.instance(  );
-    
+
             String strNotifyGruCredential = AppPropertiesService.getProperty( PROPERTY_CREDENTIAL_CLIENT_API_MANAGER, "" );
             String strUrl = AppPropertiesService.getProperty( PROPERTY_SMS_NOTIFIER_ENDPOINT_URL );
             String strToken = senderEndPoint.getToken( strNotifyGruCredential );
             Map<String, String> headers = new HashMap<String, String>(  );
-            senderEndPoint.send( certificatSMS, strToken, headers, strUrl );
+            senderEndPoint.send( certifNotif, strToken, headers, strUrl );
         }
         else
         {
@@ -294,17 +306,18 @@ public final class MobileCertifierService
      */
     public enum ValidationResult
     {
-       OK( MESSAGE_CODE_VALIDATION_OK ),
+        OK( MESSAGE_CODE_VALIDATION_OK ),
         INVALID_CODE( MESSAGE_CODE_VALIDATION_INVALID ),
         SESSION_EXPIRED( MESSAGE_SESSION_EXPIRED ),
         CODE_EXPIRED( MESSAGE_CODE_EXPIRED ),
         TOO_MANY_ATTEMPS( MESSAGE_TOO_MANY_ATTEMPS );
         
         private String _strMessageKey;
-            /**
-         * Constructor
-         * @param strMessageKey The i18n message key
-         */
+
+        /**
+        * Constructor
+        * @param strMessageKey The i18n message key
+        */
         ValidationResult( String strMessageKey )
         {
             _strMessageKey = strMessageKey;
@@ -318,6 +331,6 @@ public final class MobileCertifierService
         {
             return _strMessageKey;
         }
- 
+
     }
 }
