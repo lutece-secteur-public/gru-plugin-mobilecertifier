@@ -35,6 +35,8 @@ package fr.paris.lutece.plugins.identitystore.modules.mobilecertifier.web;
 
 import fr.paris.lutece.plugins.identitystore.modules.mobilecertifier.service.MobileCertifierService;
 import fr.paris.lutece.plugins.identitystore.modules.mobilecertifier.service.MobileCertifierService.ValidationResult;
+import fr.paris.lutece.portal.service.security.LuteceUser;
+import fr.paris.lutece.portal.service.security.SecurityService;
 import fr.paris.lutece.portal.service.security.UserNotSignedException;
 import fr.paris.lutece.portal.service.util.AppException;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
@@ -45,6 +47,8 @@ import fr.paris.lutece.portal.util.mvc.xpage.annotations.Controller;
 import fr.paris.lutece.portal.web.l10n.LocaleService;
 import fr.paris.lutece.portal.web.xpages.XPage;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -60,7 +64,10 @@ public class MobileCertifierApp extends MVCApplication
     private static final long serialVersionUID = 1L;
     private static final String TEMPLATE_HOME = "skin/plugins/identitystore/modules/mobilecertifier/home.html";
     private static final String TEMPLATE_VALIDATION_CODE = "skin/plugins/identitystore/modules/mobilecertifier/validation_code.html";
+    private static final String TEMPLATE_AJAX_VALIDATION_CODE = "skin/plugins/identitystore/modules/mobilecertifier/ajax/validation_code.html";
     private static final String TEMPLATE_VALIDATION_OK = "skin/plugins/identitystore/modules/mobilecertifier/validation_ok.html";
+    private static final String TEMPLATE_AJAX_VALIDATION_OK = "skin/plugins/identitystore/modules/mobilecertifier/ajax/validation_ok.html";
+    private static final String TEMPLATE_AJAX_VALIDATION_KO = "skin/plugins/identitystore/modules/mobilecertifier/ajax/validation_ko.html";
     private static final String VIEW_HOME = "home";
     private static final String VIEW_VALIDATION_CODE = "validationCode";
     private static final String VIEW_VALIDATION_OK = "validationOK";
@@ -68,20 +75,25 @@ public class MobileCertifierApp extends MVCApplication
     private static final String ACTION_VALIDATE_CODE = "validateCode";
     private static final String PARAMETER_MOBILE_NUMBER = "mobile_number";
     private static final String PARAMETER_VALIDATION_CODE = "validation_code";
+    private static final String PARAMETER_VIEW_MODE = "view_mode";
     private static final String PATTERN_PHONE = "(\\d{10})$";
     private static final String PROPERTY_PATTERN = "module.identitystore.mobilecertifier.numbervalidation.regexp";
     private static final String MESSAGE_KEY_INVALID_NUMBER = "module.identitystore.mobilecertifier.message.invalidNumber";
     private static final String MESSAGE_CODE_VALIDATION_SEND_ERROR = "module.identitystore.mobilecertifier.message.codeValidationSendError";
+    private static final String AJAX_MODE = "ajax";
 
     /**
      * Gets the Home page
      *
      * @param request The HTTP request
      * @return The XPage
+     * @throws UserNotSignedException if user is not connected
      */
     @View( value = VIEW_HOME, defaultView = true )
-    public XPage home( HttpServletRequest request )
+    public XPage home( HttpServletRequest request ) throws UserNotSignedException
     {
+        checkUserAuthentication( request );
+
         return getXPage( TEMPLATE_HOME, LocaleService.getDefault(  ), getModel(  ) );
     }
 
@@ -95,6 +107,8 @@ public class MobileCertifierApp extends MVCApplication
     public XPage doCertify( HttpServletRequest request )
         throws UserNotSignedException
     {
+        checkUserAuthentication( request );
+
         String strMobileNumber = request.getParameter( PARAMETER_MOBILE_NUMBER );
         String strErrorKey = validateNumber( strMobileNumber );
 
@@ -102,30 +116,84 @@ public class MobileCertifierApp extends MVCApplication
         {
             addError( strErrorKey, request.getLocale(  ) );
 
+            if ( isAjaxMode( request )  )
+            {
+                XPage page = getXPage( TEMPLATE_AJAX_VALIDATION_KO, LocaleService.getDefault(  ), getModel(  ) );
+                page.setStandalone( true );
+
+                return page;
+            }
+
             return redirectView( request, VIEW_HOME );
         }
-        try 
+
+        try
         {
             MobileCertifierService.startValidation( request, strMobileNumber );
-        } 
-        catch ( AppException appEx ) 
+        }
+        catch ( AppException appEx )
         {
-            addError( MESSAGE_CODE_VALIDATION_SEND_ERROR , request.getLocale(  ) );
+            addError( MESSAGE_CODE_VALIDATION_SEND_ERROR, request.getLocale(  ) );
+
+            if ( isAjaxMode( request ) )
+            {
+                XPage page = getXPage( TEMPLATE_AJAX_VALIDATION_KO, LocaleService.getDefault(  ), getModel(  ) );
+                page.setStandalone( true );
+
+                return page;
+            }
+
             return redirectView( request, VIEW_HOME );
-            
         }
 
-        return redirectView( request, VIEW_VALIDATION_CODE );
+        return redirect( request, VIEW_VALIDATION_CODE, getAdditionalParametersMap( request ) );
     }
 
+    /**
+     * set additionnal parameters map
+     *  - PARAMETER_VIEW_MODE
+     * @param request request which contains params to set
+     * @return map filled with parameters
+     */
+    private Map<String, String> getAdditionalParametersMap( HttpServletRequest request )
+    {
+        Map<String, String> mapParam = new HashMap<String, String>(  );
+        mapParam.put( PARAMETER_VIEW_MODE, request.getParameter( PARAMETER_VIEW_MODE ) );
+
+        return mapParam;
+    }
+
+    /**
+     * returns true if view are displayed in ajax 
+     * @param request http request
+     * @return true if ajax, false otherwise
+     */
+    private boolean isAjaxMode( HttpServletRequest request )
+    {
+        return request.getParameter( PARAMETER_VIEW_MODE ) != null  &&
+                request.getParameter( PARAMETER_VIEW_MODE ).equals( AJAX_MODE ) ;
+    }
+    
     /**
      * Displays Validation code filling page
      * @param request The HTTP request
      * @return The page
+     * @throws UserNotSignedException if user is not connected
      */
     @View( VIEW_VALIDATION_CODE )
     public XPage validationCode( HttpServletRequest request )
+        throws UserNotSignedException
     {
+        checkUserAuthentication( request );
+
+        if ( isAjaxMode( request ) )
+        {
+            XPage page = getXPage( TEMPLATE_AJAX_VALIDATION_CODE, LocaleService.getDefault(  ), getModel(  ) );
+            page.setStandalone( true );
+
+            return page;
+        }
+
         return getXPage( TEMPLATE_VALIDATION_CODE, LocaleService.getDefault(  ), getModel(  ) );
     }
 
@@ -133,10 +201,14 @@ public class MobileCertifierApp extends MVCApplication
      * process the validation
      * @param request The HTTP request
      * @return The redirected page
+     * @throws UserNotSignedException if user is not connected
      */
     @Action( ACTION_VALIDATE_CODE )
     public XPage doValidateCode( HttpServletRequest request )
+        throws UserNotSignedException
     {
+        checkUserAuthentication( request );
+
         String strValidationCode = request.getParameter( PARAMETER_VALIDATION_CODE );
         ValidationResult result = MobileCertifierService.validate( request, strValidationCode );
 
@@ -144,25 +216,55 @@ public class MobileCertifierApp extends MVCApplication
         {
             addError( result.getMessageKey(  ), LocaleService.getDefault(  ) );
 
-            if ( result == ValidationResult.SESSION_EXPIRED )
+            if ( isAjaxMode( request ) )
             {
-                return redirectView( request, VIEW_HOME );
+                if ( result == ValidationResult.INVALID_CODE )
+                {
+                    XPage page = getXPage( TEMPLATE_AJAX_VALIDATION_CODE, LocaleService.getDefault(  ), getModel(  ) );
+                    page.setStandalone( true );
+
+                    return page;
+                }
+                else
+                {
+                    XPage page = getXPage( TEMPLATE_AJAX_VALIDATION_KO, LocaleService.getDefault(  ), getModel(  ) );
+                    page.setStandalone( true );
+
+                    return page;
+                }
             }
 
-            return redirectView( request, VIEW_VALIDATION_CODE );
+            if ( result == ValidationResult.SESSION_EXPIRED )
+            {
+                return redirect( request, VIEW_HOME, getAdditionalParametersMap( request ) );
+            }
+
+            return redirect( request, VIEW_VALIDATION_CODE, getAdditionalParametersMap( request ) );
         }
 
-        return redirectView( request, VIEW_VALIDATION_OK );
+        return redirect( request, VIEW_VALIDATION_OK, getAdditionalParametersMap( request ) );
     }
 
     /**
      * Displays Validation OK page
      * @param request The HTTP request
      * @return The page
+     * @throws UserNotSignedException if user is not connected
      */
     @View( VIEW_VALIDATION_OK )
     public XPage validationOK( HttpServletRequest request )
+        throws UserNotSignedException
     {
+        checkUserAuthentication( request );
+
+        if ( isAjaxMode( request ) )
+        {
+            XPage page = getXPage( TEMPLATE_AJAX_VALIDATION_OK, LocaleService.getDefault(  ), getModel(  ) );
+            page.setStandalone( true );
+
+            return page;
+        }
+
         return getXPage( TEMPLATE_VALIDATION_OK );
     }
 
@@ -183,5 +285,22 @@ public class MobileCertifierApp extends MVCApplication
         }
 
         return null;
+    }
+
+    /**
+     * check if user is authenticated
+     * @param request request
+     * @throws UserNotSignedException if user is not connected
+     */
+    private void checkUserAuthentication( HttpServletRequest request )
+        throws UserNotSignedException
+    {
+        LuteceUser luteceUser = SecurityService.isAuthenticationEnable(  )
+            ? SecurityService.getInstance(  ).getRegisteredUser( request ) : null;
+
+        if ( luteceUser == null )
+        {
+            throw new UserNotSignedException(  );
+        }
     }
 }

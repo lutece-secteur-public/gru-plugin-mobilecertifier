@@ -127,7 +127,7 @@ public final class MobileCertifierService
             notifSMS.setPhoneNumber( strMobileNumber );
             certifNotif.setGuid( getUserConnectionId( request ) );
             certifNotif.setUserSMS( notifSMS );
-            certifNotif.setNotificationDate( new Date().getTime( ) );
+            certifNotif.setNotificationDate( new Date(  ).getTime(  ) );
 
             SendNotificationAsJson senderEndPoint = SendNotificationAsJson.instance(  );
 
@@ -221,15 +221,14 @@ public final class MobileCertifierService
             author, certifier );
 
         if ( AppPropertiesService.getPropertyBoolean( PROPERTY_API_MANAGER_ENABLED, true ) )
-        {           
+        {
             NotifyGruGlobalNotification certifNotif = new NotifyGruGlobalNotification(  );
             NotifyGruSMSNotification notifSMS = new NotifyGruSMSNotification(  );
             notifSMS.setMessage( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_CONFIRM_TEXT, locale ) );
-            notifSMS.setPhoneNumber(  infos.getMobileNumber(  ) );
-            certifNotif.setGuid(  infos.getUserConnectionId( )  );
+            notifSMS.setPhoneNumber( infos.getMobileNumber(  ) );
+            certifNotif.setGuid( infos.getUserConnectionId(  ) );
             certifNotif.setUserSMS( notifSMS );
-            certifNotif.setNotificationDate( new Date().getTime( ) );
-            
+            certifNotif.setNotificationDate( new Date(  ).getTime(  ) );
 
             SendNotificationAsJson senderEndPoint = SendNotificationAsJson.instance(  );
 
@@ -331,6 +330,5 @@ public final class MobileCertifierService
         {
             return _strMessageKey;
         }
-
     }
 }
