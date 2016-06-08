@@ -39,8 +39,10 @@ package fr.paris.lutece.plugins.identitystore.modules.mobilecertifier.service;
  */
 public class ValidationInfos
 {
-    // Variables declarations 
+    // Variables declarations
     private String _strMobileNumber;
+    private int _strCustomerId;
+    private String _strUserEmail;
     private String _strUserConnectionId;
     private String _strValidationCode;
     private long _expiresTime;
@@ -48,6 +50,7 @@ public class ValidationInfos
 
     /**
      * Returns the ValidationCode
+     *
      * @return The ValidationCode
      */
     public String getValidationCode(  )
@@ -57,7 +60,9 @@ public class ValidationInfos
 
     /**
      * Sets the ValidationCode
-     * @param strValidationCode The ValidationCode
+     *
+     * @param strValidationCode
+     *          The ValidationCode
      */
     public void setValidationCode( String strValidationCode )
     {
@@ -66,6 +71,7 @@ public class ValidationInfos
 
     /**
      * Returns the MobileNumber
+     *
      * @return The MobileNumber
      */
     public String getMobileNumber(  )
@@ -75,7 +81,9 @@ public class ValidationInfos
 
     /**
      * Sets the MobileNumber
-     * @param strMobileNumber The MobileNumber
+     *
+     * @param strMobileNumber
+     *          The MobileNumber
      */
     public void setMobileNumber( String strMobileNumber )
     {
@@ -84,6 +92,7 @@ public class ValidationInfos
 
     /**
      * Returns the UserConnectionId
+     *
      * @return The UserConnectionId
      */
     public String getUserConnectionId(  )
@@ -92,8 +101,27 @@ public class ValidationInfos
     }
 
     /**
+     * @return the _strUserEmail
+     */
+    public String getUserEmail(  )
+    {
+        return _strUserEmail;
+    }
+
+    /**
+     * @param strUserEmail
+     *          the _strUserEmail to set
+     */
+    public void setUserEmail( String strUserEmail )
+    {
+        this._strUserEmail = strUserEmail;
+    }
+
+    /**
      * Sets the UserConnectionId
-     * @param strUserConnectionId The UserConnectionId
+     *
+     * @param strUserConnectionId
+     *          The UserConnectionId
      */
     public void setUserConnectionId( String strUserConnectionId )
     {
@@ -101,7 +129,25 @@ public class ValidationInfos
     }
 
     /**
+     * @return the _strCustomerId
+     */
+    public int getCustomerId(  )
+    {
+        return _strCustomerId;
+    }
+
+    /**
+     * @param strCustomerId
+     *          the _strCustomerId to set
+     */
+    public void setCustomerId( int strCustomerId )
+    {
+        this._strCustomerId = strCustomerId;
+    }
+
+    /**
      * Returns the expiresTime
+     *
      * @return The expiresTime
      */
     public long getExpiresTime(  )
@@ -111,7 +157,9 @@ public class ValidationInfos
 
     /**
      * Sets the expiresTime
-     * @param expiresTime The expiresTime
+     *
+     * @param expiresTime
+     *          The expiresTime
      */
     public void setExpiresTime( long expiresTime )
     {
@@ -120,6 +168,7 @@ public class ValidationInfos
 
     /**
      * Returns the InvalidAttempts
+     *
      * @return The InvalidAttempts
      */
     public int getInvalidAttempts(  )
@@ -129,7 +178,9 @@ public class ValidationInfos
 
     /**
      * Sets the InvalidAttempts
-     * @param nInvalidAttempts The InvalidAttempts
+     *
+     * @param nInvalidAttempts
+     *          The InvalidAttempts
      */
     public void setInvalidAttempts( int nInvalidAttempts )
     {

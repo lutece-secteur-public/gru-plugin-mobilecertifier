@@ -33,11 +33,16 @@
  */
 package fr.paris.lutece.plugins.identitystore.modules.mobilecertifier.service;
 
+import fr.paris.lutece.plugins.identitystore.business.AttributeCertificate;
 import fr.paris.lutece.plugins.identitystore.business.AttributeCertifier;
 import fr.paris.lutece.plugins.identitystore.business.AttributeCertifierHome;
 import fr.paris.lutece.plugins.identitystore.service.ChangeAuthor;
 import fr.paris.lutece.plugins.identitystore.service.IdentityStoreService;
+import fr.paris.lutece.plugins.identitystore.web.service.AuthorType;
+import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.NotifyGruAgentNotification;
+import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.NotifyGruEmailNotification;
 import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.NotifyGruGlobalNotification;
+import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.NotifyGruGuichetNotification;
 import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.NotifyGruSMSNotification;
 import fr.paris.lutece.plugins.librarynotifygru.services.SendNotificationAsJson;
 import fr.paris.lutece.portal.service.i18n.I18nService;
@@ -49,10 +54,14 @@ import fr.paris.lutece.portal.service.util.AppPropertiesService;
 
 import org.apache.commons.lang.RandomStringUtils;
 
+import java.sql.Timestamp;
+
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -73,30 +82,61 @@ public final class MobileCertifierService
     private static final String PROPERTY_CODE_LENGTH = "identitystore.mobilecertifier.codeLength";
     private static final String PROPERTY_EXPIRES_DELAY = "identitystore.mobilecertifier.expiresDelay";
     private static final String PROPERTY_MAX_ATTEMPTS = "identitystore.mobilecertifier.maxAttempts";
+    private static final String PROPERTY_MOCKED_EMAIL = "identitystore.mobilecertifier.mockedEmail";
     private static final String PROPERTY_MOCKED_CONNECTION_ID = "identitystore.mobilecertifier.mockedConnectionId";
     private static final String PROPERTY_API_MANAGER_ENABLED = "identitystore.mobilecertifier.apiManager.enabled";
     private static final String PROPERTY_ATTRIBUTE = "identitystore.mobilecertifier.attribute";
     private static final String PROPERTY_CERTIFIER_CODE = "identitystore.mobilecertifier.certifierCode";
     private static final String PROPERTY_CREDENTIAL_CLIENT_API_MANAGER = "identitystore.mobilecertifier.apiManagerCredential";
     private static final String PROPERTY_SMS_NOTIFIER_ENDPOINT_URL = "identitystore.mobilecertifier.smsNotifierUrl";
+    private static final String PROPERTY_MOBILE_CERTIFIER_CLOSE_CRM_STATUS_ID = "identitystore.mobilecertifier.crmCloseStatusId";
+    private static final String PROPERTY_MOBILE_CERTIFIER_CLOSE_DEMAND_STATUS_ID = "identitystore.mobilecertifier.demandCloseStatusId";
+    private static final String PROPERTY_MOBILE_CERTIFIER_DEMAND_TYPE_ID = "identitystore.mobilecertifier.demandTypeId";
+    private static final String PROPERTY_MOBILE_CERTIFIER_NOTIFICATION_TYPE = "identitystore.mobilecertifier.notificationType";
+    private static final String PROPERTY_GRU_NOTIF_EMAIL_SENDER_MAIL = "identitystore.mobilecertifier.senderMail";
+    private static final String PROPERTY_GRU_NOTIF_EMAIL_SENDER_NAME = "identitystore.mobilecertifier.senderName";
+    private static final String PROPERTY_CERTIFICATE_LEVEL = "identitystore.mobilecertifier.certificate.level";
+    private static final String PROPERTY_CERTIFICATE_EXPIRATION_DELAY = "identitystore.mobilecertifier.certificate.expirationDelay";
+    private static final String MESSAGE_GRU_NOTIF_DASHBOARD_STATUS_TEXT = "module.identitystore.mobilecertifier.gru.notif.guichet.statusText";
+    private static final String MESSAGE_GRU_NOTIF_DASHBOARD_MESSAGE = "module.identitystore.mobilecertifier.gru.notif.dashboard.message";
+    private static final String MESSAGE_GRU_NOTIF_DASHBOARD_SUBJECT = "module.identitystore.mobilecertifier.gru.notif.dashboard.subject";
+    private static final String MESSAGE_GRU_NOTIF_DASHBOARD_DATA = "module.identitystore.mobilecertifier.gru.notif.dashboard.data";
+    private static final String MESSAGE_GRU_NOTIF_DASHBOARD_SENDER_NAME = "module.identitystore.mobilecertifier.gru.notif.dashboard.senderName";
+    private static final String MESSAGE_GRU_NOTIF_EMAIL_SUBJECT = "module.identitystore.mobilecertifier.gru.notif.email.subject";
+    private static final String MESSAGE_GRU_NOTIF_EMAIL_MESSAGE = "module.identitystore.mobilecertifier.gru.notif.email.message";
+    private static final String MESSAGE_GRU_NOTIF_AGENT_MESSAGE = "module.identitystore.mobilecertifier.gru.notif.agent.message";
+    private static final String MESSAGE_GRU_NOTIF_AGENT_STATUS_TEXT = "module.identitystore.mobilecertifier.gru.notif.agent.statusText";
     private static final String DEFAULT_ATTRIBUTE_NAME = "mobile_phone";
     private static final String DEFAULT_CERTIFIER_CODE = "mobilecertifier";
     private static final String DEFAULT_CONNECTION_ID = "1";
+    private static final String DEFAULT_EMAIL = "test@test.fr";
+    private static final int DEFAULT_MOBILE_CERTIFIER_CRM_CLOSE_STATUS_ID = 1;
+    private static final int DEFAULT_MOBILE_CERTIFIER_DEMAND_CLOSE_STATUS_ID = 1;
+    private static final int DEFAULT_MOBILE_CERTIFIER_DEMAND_TYPE_ID = 401;
     private static final int DEFAULT_LENGTH = 6;
     private static final int DEFAULT_EXPIRES_DELAY = 5;
     private static final int DEFAULT_MAX_ATTEMPTS = 3;
+    private static final int NO_CERTIFICATE_EXPIRATION_DELAY = -1;
+    private static final int DEFAULT_CERTIFICATE_LEVEL = 1;
     private static final String ATTRIBUTE_NAME = AppPropertiesService.getProperty( PROPERTY_ATTRIBUTE,
             DEFAULT_ATTRIBUTE_NAME );
     private static final String CERTIFIER_CODE = AppPropertiesService.getProperty( PROPERTY_CERTIFIER_CODE,
             DEFAULT_CERTIFIER_CODE );
     private static final String MOCKED_USER_CONNECTION_ID = AppPropertiesService.getProperty( PROPERTY_MOCKED_CONNECTION_ID,
             DEFAULT_CONNECTION_ID );
+    private static final String MOCKED_USER_EMAIL = AppPropertiesService.getProperty( PROPERTY_MOCKED_EMAIL,
+            DEFAULT_EMAIL );
     private static final int EXPIRES_DELAY = AppPropertiesService.getPropertyInt( PROPERTY_EXPIRES_DELAY,
             DEFAULT_EXPIRES_DELAY );
     private static final int CODE_LENGTH = AppPropertiesService.getPropertyInt( PROPERTY_CODE_LENGTH, DEFAULT_LENGTH );
     private static final int MAX_ATTEMPTS = AppPropertiesService.getPropertyInt( PROPERTY_MAX_ATTEMPTS,
             DEFAULT_MAX_ATTEMPTS );
+    private static final int CERTIFICATE_EXPIRATION_DELAY = AppPropertiesService.getPropertyInt( PROPERTY_CERTIFICATE_EXPIRATION_DELAY,
+            NO_CERTIFICATE_EXPIRATION_DELAY );
+    private static final int CERTIFICATE_LEVEL = AppPropertiesService.getPropertyInt( PROPERTY_CERTIFICATE_LEVEL,
+            DEFAULT_CERTIFICATE_LEVEL );
     private static final String SERVICE_NAME = "Mobile Certifier Service";
+    private static final String DEMAND_PREFIX = "MOBCERT_";
     private static Map<String, ValidationInfos> _mapValidationCodes = new HashMap<String, ValidationInfos>(  );
 
     /**
@@ -109,26 +149,23 @@ public final class MobileCertifierService
 
     /**
      * Starts the validation process by generating and sending a validation code
-     * @param request The HTTP request
-     * @param strMobileNumber The mobile phone number
-     * @throws fr.paris.lutece.portal.service.security.UserNotSignedException if no user found
+     *
+     * @param request
+     *          The HTTP request
+     * @param strMobileNumber
+     *          The mobile phone number
+     * @param nCustomerId
+     *          customer Id
+     * @throws fr.paris.lutece.portal.service.security.UserNotSignedException
+     *           if no user found
      */
-    public static void startValidation( HttpServletRequest request, String strMobileNumber )
+    public static void startValidation( HttpServletRequest request, String strMobileNumber, int nCustomerId )
         throws UserNotSignedException
     {
         String strValidationCode = generateValidationCode(  );
 
         if ( AppPropertiesService.getPropertyBoolean( PROPERTY_API_MANAGER_ENABLED, true ) )
         {
-            NotifyGruGlobalNotification certifNotif = new NotifyGruGlobalNotification(  );
-            NotifyGruSMSNotification notifSMS = new NotifyGruSMSNotification(  );
-            notifSMS.setMessage( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_TEXT,
-                    new String[] { strValidationCode }, request.getLocale(  ) ) );
-            notifSMS.setPhoneNumber( strMobileNumber );
-            certifNotif.setGuid( getUserConnectionId( request ) );
-            certifNotif.setUserSMS( notifSMS );
-            certifNotif.setNotificationDate( new Date(  ).getTime(  ) );
-
             SendNotificationAsJson senderEndPoint = SendNotificationAsJson.instance(  );
 
             String strNotifyGruCredential = AppPropertiesService.getProperty( PROPERTY_CREDENTIAL_CLIENT_API_MANAGER, "" );
@@ -136,12 +173,13 @@ public final class MobileCertifierService
             String strToken = senderEndPoint.getToken( strNotifyGruCredential );
 
             Map<String, String> headers = new HashMap<String, String>(  );
-
+            NotifyGruGlobalNotification certifNotif = buildSendSMSCodeNotif( getUserConnectionId( request ),
+                    strMobileNumber, nCustomerId, strValidationCode, request.getLocale(  ) );
             senderEndPoint.send( certifNotif, strToken, headers, strUrl );
         }
         else
         {
-            //mock mode => validation code is logged on file
+            // mock mode => validation code is logged on file
             AppLogService.info( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_TEXT,
                     new String[] { strValidationCode }, request.getLocale(  ) ) );
         }
@@ -152,14 +190,19 @@ public final class MobileCertifierService
         infos.setExpiresTime( getExpiresTime(  ) );
         infos.setMobileNumber( strMobileNumber );
         infos.setUserConnectionId( getUserConnectionId( request ) );
+        infos.setUserEmail( getUserEmail( request ) );
+        infos.setCustomerId( nCustomerId );
 
         _mapValidationCodes.put( session.getId(  ), infos );
     }
 
     /**
      * Validate a validation code
-     * @param request The request
-     * @param strValidationCode The validation code
+     *
+     * @param request
+     *          The request
+     * @param strValidationCode
+     *          The validation code
      * @return A validation result
      */
     public static ValidationResult validate( HttpServletRequest request, String strValidationCode )
@@ -206,29 +249,38 @@ public final class MobileCertifierService
 
     /**
      * Certify the attribute change
-     * @param infos The validation infos
-     * @param locale the locale
+     *
+     * @param infos
+     *          The validation infos
+     * @param locale
+     *          the locale
      */
     private static void certify( ValidationInfos infos, Locale locale )
     {
         AttributeCertifier certifier = AttributeCertifierHome.findByCode( CERTIFIER_CODE );
+        AttributeCertificate certificate = new AttributeCertificate(  );
+        certificate.setCertificateDate( new Timestamp( new Date(  ).getTime(  ) ) );
+        certificate.setCertificateLevel( CERTIFICATE_LEVEL );
+        certificate.setIdCertifier( certifier.getId(  ) );
+        certificate.setCertifier( certifier.getName(  ) );
+
+        if ( CERTIFICATE_EXPIRATION_DELAY != NO_CERTIFICATE_EXPIRATION_DELAY )
+        {
+            Calendar c = Calendar.getInstance(  );
+            c.setTime( new Date(  ) );
+            c.add( Calendar.DATE, CERTIFICATE_EXPIRATION_DELAY );
+            certificate.setExpirationDate( new Timestamp( c.getTime(  ).getTime(  ) ) );
+        }
+
         ChangeAuthor author = new ChangeAuthor(  );
         author.setApplication( SERVICE_NAME );
-        author.setType( ChangeAuthor.TYPE_USER_OWNER );
-        author.setUserId( infos.getUserConnectionId(  ) );
-        author.setUserName( "Author name not provided" );
+        author.setType( AuthorType.TYPE_USER_OWNER.getTypeValue(  ) );
         IdentityStoreService.setAttribute( infos.getUserConnectionId(  ), ATTRIBUTE_NAME, infos.getMobileNumber(  ),
-            author, certifier );
+            author, certificate );
 
         if ( AppPropertiesService.getPropertyBoolean( PROPERTY_API_MANAGER_ENABLED, true ) )
         {
-            NotifyGruGlobalNotification certifNotif = new NotifyGruGlobalNotification(  );
-            NotifyGruSMSNotification notifSMS = new NotifyGruSMSNotification(  );
-            notifSMS.setMessage( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_CONFIRM_TEXT, locale ) );
-            notifSMS.setPhoneNumber( infos.getMobileNumber(  ) );
-            certifNotif.setGuid( infos.getUserConnectionId(  ) );
-            certifNotif.setUserSMS( notifSMS );
-            certifNotif.setNotificationDate( new Date(  ).getTime(  ) );
+            NotifyGruGlobalNotification certifNotif = buildCertifiedNotif( infos, locale );
 
             SendNotificationAsJson senderEndPoint = SendNotificationAsJson.instance(  );
 
@@ -240,16 +292,129 @@ public final class MobileCertifierService
         }
         else
         {
-            //mock mode => certification message is logged
+            // mock mode => certification message is logged
             AppLogService.info( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_CONFIRM_TEXT, locale ) );
         }
     }
 
     /**
+     * build a notification from validation infos
+     *
+     * @param infos
+     *          validations infos
+     * @param locale
+     *          locale
+     * @return NotifyGruGlobalNotification notification to send (SMS, agent,
+     *         dashboard, email)
+     */
+    private static NotifyGruGlobalNotification buildCertifiedNotif( ValidationInfos infos, Locale locale )
+    {
+        NotifyGruGlobalNotification certifNotif = new NotifyGruGlobalNotification(  );
+        certifNotif.setGuid( infos.getUserConnectionId(  ) );
+        certifNotif.setNotificationDate( new Date(  ).getTime(  ) );
+        certifNotif.setDemandId( generateDemandId(  ) );
+        certifNotif.setDemandReference( DEMAND_PREFIX + certifNotif.getDemandId(  ) );
+        certifNotif.setEmail( infos.getUserEmail(  ) );
+        certifNotif.setCrmStatusId( AppPropertiesService.getPropertyInt( 
+                PROPERTY_MOBILE_CERTIFIER_CLOSE_CRM_STATUS_ID, DEFAULT_MOBILE_CERTIFIER_CRM_CLOSE_STATUS_ID ) );
+        certifNotif.setDemandStatus( AppPropertiesService.getPropertyInt( 
+                PROPERTY_MOBILE_CERTIFIER_CLOSE_DEMAND_STATUS_ID, DEFAULT_MOBILE_CERTIFIER_DEMAND_CLOSE_STATUS_ID ) );
+        certifNotif.setDemandTypeId( AppPropertiesService.getPropertyInt( PROPERTY_MOBILE_CERTIFIER_DEMAND_TYPE_ID,
+                DEFAULT_MOBILE_CERTIFIER_DEMAND_TYPE_ID ) );
+        certifNotif.setNotificationType( AppPropertiesService.getProperty( PROPERTY_MOBILE_CERTIFIER_NOTIFICATION_TYPE ) );
+        certifNotif.setCustomerId( infos.getCustomerId(  ) );
+
+        NotifyGruSMSNotification notifSMS = new NotifyGruSMSNotification(  );
+        notifSMS.setMessage( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_CONFIRM_TEXT, locale ) );
+        notifSMS.setPhoneNumber( infos.getMobileNumber(  ) );
+        certifNotif.setUserSMS( notifSMS );
+
+        NotifyGruGuichetNotification notifDashboard = new NotifyGruGuichetNotification(  );
+        notifDashboard.setSubject( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_SUBJECT,
+                new String[] { infos.getMobileNumber(  ) }, locale ) );
+        notifDashboard.setMessage( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_MESSAGE,
+                new String[] { infos.getMobileNumber(  ) }, locale ) );
+        notifDashboard.setStatusText( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_STATUS_TEXT,
+                new String[] { infos.getMobileNumber(  ) }, locale ) );
+        notifDashboard.setSenderName( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_SENDER_NAME, locale ) );
+        notifDashboard.setData( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_DATA,
+                new String[] { infos.getMobileNumber(  ) }, locale ) );
+        certifNotif.setUserGuichet( notifDashboard );
+
+        NotifyGruEmailNotification notifEmail = new NotifyGruEmailNotification(  );
+        notifEmail.setMessage( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_EMAIL_MESSAGE,
+                new String[] { infos.getMobileNumber(  ) }, locale ) );
+        notifEmail.setSubject( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_EMAIL_SUBJECT,
+                new String[] { infos.getMobileNumber(  ) }, locale ) );
+        notifEmail.setSenderEmail( AppPropertiesService.getProperty( PROPERTY_GRU_NOTIF_EMAIL_SENDER_MAIL ) );
+        notifEmail.setSenderName( AppPropertiesService.getProperty( PROPERTY_GRU_NOTIF_EMAIL_SENDER_NAME ) );
+        notifEmail.setRecipient( infos.getUserEmail(  ) );
+        certifNotif.setUserEmail( notifEmail );
+
+        NotifyGruAgentNotification notifAgent = new NotifyGruAgentNotification(  );
+        notifAgent.setMessage( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_AGENT_MESSAGE,
+                new String[] { infos.getMobileNumber(  ) }, locale ) );
+        notifAgent.setStatusText( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_AGENT_STATUS_TEXT,
+                new String[] { infos.getMobileNumber(  ) }, locale ) );
+        certifNotif.setUserAgent( notifAgent );
+
+        return certifNotif;
+    }
+
+    /**
+     * build a NotifyGruGlobalNotification which contains only a SMS notification,
+     * filled with input params
+     *
+     * @param strConnectionId
+     *          connection Id
+     * @param strMobileNumber
+     *          mobile phone number to certify
+     * @param nCustomerId
+     *          customerId
+     * @param strValidationCode
+     *          sms validation code
+     * @param locale
+     *          locale
+     * @return NotifyGruGlobalNotification
+     */
+    private static NotifyGruGlobalNotification buildSendSMSCodeNotif( String strConnectionId, String strMobileNumber,
+        int nCustomerId, String strValidationCode, Locale locale )
+    {
+        NotifyGruGlobalNotification certifNotif = new NotifyGruGlobalNotification(  );
+        NotifyGruSMSNotification notifSMS = new NotifyGruSMSNotification(  );
+        notifSMS.setMessage( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_TEXT,
+                new String[] { strValidationCode }, locale ) );
+        notifSMS.setPhoneNumber( strMobileNumber );
+        certifNotif.setGuid( strConnectionId );
+        certifNotif.setCustomerId( Integer.valueOf( nCustomerId ) );
+        certifNotif.setUserSMS( notifSMS );
+        certifNotif.setNotificationDate( new Date(  ).getTime(  ) );
+
+        return certifNotif;
+    }
+
+    /**
+     * generate demandid for sms certification
+     *
+     * @return demand id
+     */
+    private static int generateDemandId(  )
+    {
+        // FIXME =>how to generate a unique id
+        Random rand = new Random(  );
+        int randomNum = rand.nextInt(  );
+
+        return Math.abs( randomNum );
+    }
+
+    /**
      * returns the user connection ID
-     * @param request The HTTP request
+     *
+     * @param request
+     *          The HTTP request
      * @return the user connection ID
-     * @throws UserNotSignedException If no user is connected
+     * @throws UserNotSignedException
+     *           If no user is connected
      */
     private static String getUserConnectionId( HttpServletRequest request )
         throws UserNotSignedException
@@ -274,7 +439,39 @@ public final class MobileCertifierService
     }
 
     /**
+     * returns the user email
+     *
+     * @param request
+     *          The HTTP request
+     * @return the user connection ID
+     * @throws UserNotSignedException
+     *           If no user is connected
+     */
+    private static String getUserEmail( HttpServletRequest request )
+        throws UserNotSignedException
+    {
+        if ( SecurityService.isAuthenticationEnable(  ) )
+        {
+            LuteceUser user = SecurityService.getInstance(  ).getRegisteredUser( request );
+
+            if ( user != null )
+            {
+                return user.getEmail(  );
+            }
+            else
+            {
+                throw new UserNotSignedException(  );
+            }
+        }
+        else
+        {
+            return MOCKED_USER_EMAIL;
+        }
+    }
+
+    /**
      * Generate a random alphanumeric code
+     *
      * @return The code
      */
     private static String generateValidationCode(  )
@@ -284,6 +481,7 @@ public final class MobileCertifierService
 
     /**
      * Calculate an expiration time
+     *
      * @return the time as a long value
      */
     private static long getExpiresTime(  )
@@ -293,6 +491,7 @@ public final class MobileCertifierService
 
     /**
      * The current time as a long value
+     *
      * @return current time as a long value
      */
     private static long now(  )
@@ -304,19 +503,14 @@ public final class MobileCertifierService
      * Enumeration of all validation results
      */
     public enum ValidationResult
-    {
-        OK( MESSAGE_CODE_VALIDATION_OK ),
-        INVALID_CODE( MESSAGE_CODE_VALIDATION_INVALID ),
-        SESSION_EXPIRED( MESSAGE_SESSION_EXPIRED ),
-        CODE_EXPIRED( MESSAGE_CODE_EXPIRED ),
-        TOO_MANY_ATTEMPS( MESSAGE_TOO_MANY_ATTEMPS );
-        
-        private String _strMessageKey;
+    {private String _strMessageKey;
 
         /**
-        * Constructor
-        * @param strMessageKey The i18n message key
-        */
+         * Constructor
+         *
+         * @param strMessageKey
+         *          The i18n message key
+         */
         ValidationResult( String strMessageKey )
         {
             _strMessageKey = strMessageKey;
@@ -324,11 +518,17 @@ public final class MobileCertifierService
 
         /**
          * Return the i18n message key
+         *
          * @return the i18n message key
          */
         public String getMessageKey(  )
         {
             return _strMessageKey;
         }
+        OK( MESSAGE_CODE_VALIDATION_OK ),
+        INVALID_CODE( MESSAGE_CODE_VALIDATION_INVALID ),
+        SESSION_EXPIRED( MESSAGE_SESSION_EXPIRED ),
+        CODE_EXPIRED( MESSAGE_CODE_EXPIRED ),
+        TOO_MANY_ATTEMPS( MESSAGE_TOO_MANY_ATTEMPS );
     }
 }

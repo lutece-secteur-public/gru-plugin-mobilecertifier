@@ -47,6 +47,8 @@ import fr.paris.lutece.portal.util.mvc.xpage.annotations.Controller;
 import fr.paris.lutece.portal.web.l10n.LocaleService;
 import fr.paris.lutece.portal.web.xpages.XPage;
 
+import org.apache.commons.lang.StringUtils;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -76,6 +78,7 @@ public class MobileCertifierApp extends MVCApplication
     private static final String PARAMETER_MOBILE_NUMBER = "mobile_number";
     private static final String PARAMETER_VALIDATION_CODE = "validation_code";
     private static final String PARAMETER_VIEW_MODE = "view_mode";
+    private static final String PARAMETER_CUSTOMER_ID = "cid";
     private static final String PATTERN_PHONE = "(\\d{10})$";
     private static final String PROPERTY_PATTERN = "module.identitystore.mobilecertifier.numbervalidation.regexp";
     private static final String MESSAGE_KEY_INVALID_NUMBER = "module.identitystore.mobilecertifier.message.invalidNumber";
@@ -85,9 +88,11 @@ public class MobileCertifierApp extends MVCApplication
     /**
      * Gets the Home page
      *
-     * @param request The HTTP request
+     * @param request
+     *          The HTTP request
      * @return The XPage
-     * @throws UserNotSignedException if user is not connected
+     * @throws UserNotSignedException
+     *           if user is not connected
      */
     @View( value = VIEW_HOME, defaultView = true )
     public XPage home( HttpServletRequest request ) throws UserNotSignedException
@@ -99,9 +104,12 @@ public class MobileCertifierApp extends MVCApplication
 
     /**
      * process the mobile number
-     * @param request The HTTP request
+     *
+     * @param request
+     *          The HTTP request
      * @return The redirected page
-     * @throws UserNotSignedException if no user is connected
+     * @throws UserNotSignedException
+     *           if no user is connected
      */
     @Action( ACTION_CERTIFY )
     public XPage doCertify( HttpServletRequest request )
@@ -110,13 +118,14 @@ public class MobileCertifierApp extends MVCApplication
         checkUserAuthentication( request );
 
         String strMobileNumber = request.getParameter( PARAMETER_MOBILE_NUMBER );
+        String strCustomerId = request.getParameter( PARAMETER_CUSTOMER_ID );
         String strErrorKey = validateNumber( strMobileNumber );
 
         if ( strErrorKey != null )
         {
             addError( strErrorKey, request.getLocale(  ) );
 
-            if ( isAjaxMode( request )  )
+            if ( isAjaxMode( request ) )
             {
                 XPage page = getXPage( TEMPLATE_AJAX_VALIDATION_KO, LocaleService.getDefault(  ), getModel(  ) );
                 page.setStandalone( true );
@@ -129,7 +138,9 @@ public class MobileCertifierApp extends MVCApplication
 
         try
         {
-            MobileCertifierService.startValidation( request, strMobileNumber );
+            MobileCertifierService.startValidation( request, strMobileNumber,
+                ( StringUtils.isNotEmpty( strCustomerId ) && StringUtils.isNumeric( strCustomerId ) )
+                ? Integer.parseInt( strCustomerId ) : ( -1 ) );
         }
         catch ( AppException appEx )
         {
@@ -150,35 +161,42 @@ public class MobileCertifierApp extends MVCApplication
     }
 
     /**
-     * set additionnal parameters map
-     *  - PARAMETER_VIEW_MODE
-     * @param request request which contains params to set
+     * set additionnal parameters map - PARAMETER_VIEW_MODE
+     *
+     * @param request
+     *          request which contains params to set
      * @return map filled with parameters
      */
     private Map<String, String> getAdditionalParametersMap( HttpServletRequest request )
     {
         Map<String, String> mapParam = new HashMap<String, String>(  );
+        mapParam.put( PARAMETER_CUSTOMER_ID, request.getParameter( PARAMETER_CUSTOMER_ID ) );
         mapParam.put( PARAMETER_VIEW_MODE, request.getParameter( PARAMETER_VIEW_MODE ) );
 
         return mapParam;
     }
 
     /**
-     * returns true if view are displayed in ajax 
-     * @param request http request
+     * returns true if view are displayed in ajax
+     *
+     * @param request
+     *          http request
      * @return true if ajax, false otherwise
      */
     private boolean isAjaxMode( HttpServletRequest request )
     {
-        return request.getParameter( PARAMETER_VIEW_MODE ) != null  &&
-                request.getParameter( PARAMETER_VIEW_MODE ).equals( AJAX_MODE ) ;
+        return ( request.getParameter( PARAMETER_VIEW_MODE ) != null ) &&
+        request.getParameter( PARAMETER_VIEW_MODE ).equals( AJAX_MODE );
     }
-    
+
     /**
      * Displays Validation code filling page
-     * @param request The HTTP request
+     *
+     * @param request
+     *          The HTTP request
      * @return The page
-     * @throws UserNotSignedException if user is not connected
+     * @throws UserNotSignedException
+     *           if user is not connected
      */
     @View( VIEW_VALIDATION_CODE )
     public XPage validationCode( HttpServletRequest request )
@@ -199,9 +217,12 @@ public class MobileCertifierApp extends MVCApplication
 
     /**
      * process the validation
-     * @param request The HTTP request
+     *
+     * @param request
+     *          The HTTP request
      * @return The redirected page
-     * @throws UserNotSignedException if user is not connected
+     * @throws UserNotSignedException
+     *           if user is not connected
      */
     @Action( ACTION_VALIDATE_CODE )
     public XPage doValidateCode( HttpServletRequest request )
@@ -247,9 +268,12 @@ public class MobileCertifierApp extends MVCApplication
 
     /**
      * Displays Validation OK page
-     * @param request The HTTP request
+     *
+     * @param request
+     *          The HTTP request
      * @return The page
-     * @throws UserNotSignedException if user is not connected
+     * @throws UserNotSignedException
+     *           if user is not connected
      */
     @View( VIEW_VALIDATION_OK )
     public XPage validationOK( HttpServletRequest request )
@@ -270,7 +294,9 @@ public class MobileCertifierApp extends MVCApplication
 
     /**
      * Validate a given mobile phone number
-     * @param strMobileNumber The phone number
+     *
+     * @param strMobileNumber
+     *          The phone number
      * @return A message key if an error occures otherwise null
      */
     private String validateNumber( String strMobileNumber )
@@ -289,8 +315,11 @@ public class MobileCertifierApp extends MVCApplication
 
     /**
      * check if user is authenticated
-     * @param request request
-     * @throws UserNotSignedException if user is not connected
+     *
+     * @param request
+     *          request
+     * @throws UserNotSignedException
+     *           if user is not connected
      */
     private void checkUserAuthentication( HttpServletRequest request )
         throws UserNotSignedException
