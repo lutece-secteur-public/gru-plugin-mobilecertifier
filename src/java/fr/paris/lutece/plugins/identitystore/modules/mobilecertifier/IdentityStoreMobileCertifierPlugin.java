@@ -50,6 +50,7 @@ public class IdentityStoreMobileCertifierPlugin extends PluginDefaultImplementat
 
     /**
      * Get the plugin
+     *
      * @return the plugin
      */
     public static Plugin getPlugin(  )
