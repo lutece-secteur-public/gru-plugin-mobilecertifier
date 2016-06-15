@@ -97,7 +97,7 @@ public final class MobileCertifierService
     private static final String PROPERTY_GRU_NOTIF_EMAIL_SENDER_NAME = "identitystore.mobilecertifier.senderName";
     private static final String PROPERTY_CERTIFICATE_LEVEL = "identitystore.mobilecertifier.certificate.level";
     private static final String PROPERTY_CERTIFICATE_EXPIRATION_DELAY = "identitystore.mobilecertifier.certificate.expirationDelay";
-    private static final String MESSAGE_GRU_NOTIF_DASHBOARD_STATUS_TEXT = "module.identitystore.mobilecertifier.gru.notif.guichet.statusText";
+    private static final String MESSAGE_GRU_NOTIF_DASHBOARD_STATUS_TEXT = "module.identitystore.mobilecertifier.gru.notif.dashboard.statusText";
     private static final String MESSAGE_GRU_NOTIF_DASHBOARD_MESSAGE = "module.identitystore.mobilecertifier.gru.notif.dashboard.message";
     private static final String MESSAGE_GRU_NOTIF_DASHBOARD_SUBJECT = "module.identitystore.mobilecertifier.gru.notif.dashboard.subject";
     private static final String MESSAGE_GRU_NOTIF_DASHBOARD_DATA = "module.identitystore.mobilecertifier.gru.notif.dashboard.data";
@@ -334,8 +334,7 @@ public final class MobileCertifierService
                 new String[] { infos.getMobileNumber(  ) }, locale ) );
         notifDashboard.setMessage( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_MESSAGE,
                 new String[] { infos.getMobileNumber(  ) }, locale ) );
-        notifDashboard.setStatusText( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_STATUS_TEXT,
-                new String[] { infos.getMobileNumber(  ) }, locale ) );
+        notifDashboard.setStatusText( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_STATUS_TEXT, locale ) );
         notifDashboard.setSenderName( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_SENDER_NAME, locale ) );
         notifDashboard.setData( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_DATA,
                 new String[] { infos.getMobileNumber(  ) }, locale ) );
@@ -503,12 +502,12 @@ public final class MobileCertifierService
      * Enumeration of all validation results
      */
     public enum ValidationResult
-    {
-        OK( MESSAGE_CODE_VALIDATION_OK ),
+    {        OK( MESSAGE_CODE_VALIDATION_OK ),
         INVALID_CODE( MESSAGE_CODE_VALIDATION_INVALID ),
         SESSION_EXPIRED( MESSAGE_SESSION_EXPIRED ),
         CODE_EXPIRED( MESSAGE_CODE_EXPIRED ),
         TOO_MANY_ATTEMPS( MESSAGE_TOO_MANY_ATTEMPS );
+    
         private String _strMessageKey;
 
         /**
