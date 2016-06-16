@@ -36,6 +36,8 @@ package fr.paris.lutece.plugins.identitystore.modules.mobilecertifier.service;
 import fr.paris.lutece.plugins.identitystore.business.AttributeCertificate;
 import fr.paris.lutece.plugins.identitystore.business.AttributeCertifier;
 import fr.paris.lutece.plugins.identitystore.business.AttributeCertifierHome;
+import fr.paris.lutece.plugins.identitystore.business.Identity;
+import fr.paris.lutece.plugins.identitystore.business.IdentityHome;
 import fr.paris.lutece.plugins.identitystore.service.ChangeAuthor;
 import fr.paris.lutece.plugins.identitystore.service.IdentityStoreService;
 import fr.paris.lutece.plugins.identitystore.web.service.AuthorType;
@@ -55,7 +57,6 @@ import fr.paris.lutece.portal.service.util.AppPropertiesService;
 import org.apache.commons.lang.RandomStringUtils;
 
 import java.sql.Timestamp;
-
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -275,7 +276,8 @@ public final class MobileCertifierService
         ChangeAuthor author = new ChangeAuthor(  );
         author.setApplication( SERVICE_NAME );
         author.setType( AuthorType.TYPE_USER_OWNER.getTypeValue(  ) );
-        IdentityStoreService.setAttribute( infos.getUserConnectionId(  ), ATTRIBUTE_NAME, infos.getMobileNumber(  ),
+        Identity identity = IdentityHome.findByConnectionId( infos.getUserConnectionId(  ) );
+        IdentityStoreService.setAttribute( identity, ATTRIBUTE_NAME, infos.getMobileNumber(  ),
             author, certificate );
 
         if ( AppPropertiesService.getPropertyBoolean( PROPERTY_API_MANAGER_ENABLED, true ) )
