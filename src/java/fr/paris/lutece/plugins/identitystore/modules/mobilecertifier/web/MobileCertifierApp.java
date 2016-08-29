@@ -84,8 +84,19 @@ public class MobileCertifierApp extends MVCApplication
     private static final String MESSAGE_KEY_INVALID_NUMBER = "module.identitystore.mobilecertifier.message.invalidNumber";
     private static final String MESSAGE_CODE_VALIDATION_SEND_ERROR = "module.identitystore.mobilecertifier.message.codeValidationSendError";
     private static final String AJAX_MODE = "ajax";
+    
+    private MobileCertifierService _mobileCertifierService;
 
     /**
+	 * Constructor for init
+	 */
+    public MobileCertifierApp(  )
+    {
+	    super(  );
+	    _mobileCertifierService = new MobileCertifierService(  );
+    }
+
+	/**
      * Gets the Home page
      *
      * @param request
@@ -138,7 +149,7 @@ public class MobileCertifierApp extends MVCApplication
 
         try
         {
-            MobileCertifierService.startValidation( request, strMobileNumber,
+        	_mobileCertifierService.startValidation( request, strMobileNumber,
                 ( StringUtils.isNotEmpty( strCustomerId ) && StringUtils.isNumeric( strCustomerId ) )
                 ? Integer.parseInt( strCustomerId ) : ( -1 ) );
         }
@@ -231,7 +242,7 @@ public class MobileCertifierApp extends MVCApplication
         checkUserAuthentication( request );
 
         String strValidationCode = request.getParameter( PARAMETER_VALIDATION_CODE );
-        ValidationResult result = MobileCertifierService.validate( request, strValidationCode );
+        ValidationResult result = _mobileCertifierService.validate( request, strValidationCode );
 
         if ( result != ValidationResult.OK )
         {

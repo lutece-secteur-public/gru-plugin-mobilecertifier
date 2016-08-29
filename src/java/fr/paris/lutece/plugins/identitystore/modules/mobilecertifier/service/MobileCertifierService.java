@@ -33,29 +33,6 @@
  */
 package fr.paris.lutece.plugins.identitystore.modules.mobilecertifier.service;
 
-import fr.paris.lutece.plugins.identitystore.business.AttributeCertificate;
-import fr.paris.lutece.plugins.identitystore.business.AttributeCertifier;
-import fr.paris.lutece.plugins.identitystore.business.AttributeCertifierHome;
-import fr.paris.lutece.plugins.identitystore.business.Identity;
-import fr.paris.lutece.plugins.identitystore.business.IdentityHome;
-import fr.paris.lutece.plugins.identitystore.service.ChangeAuthor;
-import fr.paris.lutece.plugins.identitystore.service.IdentityStoreService;
-import fr.paris.lutece.plugins.identitystore.web.service.AuthorType;
-import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.NotifyGruAgentNotification;
-import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.NotifyGruEmailNotification;
-import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.NotifyGruGlobalNotification;
-import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.NotifyGruGuichetNotification;
-import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.NotifyGruSMSNotification;
-import fr.paris.lutece.plugins.librarynotifygru.services.SendNotificationAsJson;
-import fr.paris.lutece.portal.service.i18n.I18nService;
-import fr.paris.lutece.portal.service.security.LuteceUser;
-import fr.paris.lutece.portal.service.security.SecurityService;
-import fr.paris.lutece.portal.service.security.UserNotSignedException;
-import fr.paris.lutece.portal.service.util.AppLogService;
-import fr.paris.lutece.portal.service.util.AppPropertiesService;
-
-import org.apache.commons.lang.RandomStringUtils;
-
 import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Date;
@@ -67,11 +44,35 @@ import java.util.Random;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import org.apache.commons.lang.RandomStringUtils;
+
+import fr.paris.lutece.plugins.identitystore.business.AttributeCertificate;
+import fr.paris.lutece.plugins.identitystore.business.AttributeCertifier;
+import fr.paris.lutece.plugins.identitystore.business.AttributeCertifierHome;
+import fr.paris.lutece.plugins.identitystore.business.Identity;
+import fr.paris.lutece.plugins.identitystore.business.IdentityHome;
+import fr.paris.lutece.plugins.identitystore.service.ChangeAuthor;
+import fr.paris.lutece.plugins.identitystore.service.IdentityStoreService;
+import fr.paris.lutece.plugins.identitystore.web.service.AuthorType;
+import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.AgentNotification;
+import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.EmailNotification;
+import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.NotifyGruGlobalNotification;
+import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.SMSNotification;
+import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.UserDashboardNotification;
+import fr.paris.lutece.plugins.librarynotifygru.services.NotificationService;
+import fr.paris.lutece.portal.service.i18n.I18nService;
+import fr.paris.lutece.portal.service.security.LuteceUser;
+import fr.paris.lutece.portal.service.security.SecurityService;
+import fr.paris.lutece.portal.service.security.UserNotSignedException;
+import fr.paris.lutece.portal.service.spring.SpringContextService;
+import fr.paris.lutece.portal.service.util.AppLogService;
+import fr.paris.lutece.portal.service.util.AppPropertiesService;
+
 
 /**
  * Mobile Certifier Service
  */
-public final class MobileCertifierService
+public class MobileCertifierService
 {
     private static final String MESSAGE_CODE_VALIDATION_OK = "module.identitystore.mobilecertifier.message.validation.ok";
     private static final String MESSAGE_CODE_VALIDATION_INVALID = "module.identitystore.mobilecertifier.message.validation.invalidCode";
@@ -89,7 +90,7 @@ public final class MobileCertifierService
     private static final String PROPERTY_ATTRIBUTE = "identitystore.mobilecertifier.attribute";
     private static final String PROPERTY_CERTIFIER_CODE = "identitystore.mobilecertifier.certifierCode";
     private static final String PROPERTY_CREDENTIAL_CLIENT_API_MANAGER = "identitystore.mobilecertifier.apiManagerCredential";
-    private static final String PROPERTY_SMS_NOTIFIER_ENDPOINT_URL = "identitystore.mobilecertifier.smsNotifierUrl";
+    private static final String PROPERTY_NOTIFICATION_SENDER = "identitystore.mobilecertifier.notificationSender";
     private static final String PROPERTY_MOBILE_CERTIFIER_CLOSE_CRM_STATUS_ID = "identitystore.mobilecertifier.crmCloseStatusId";
     private static final String PROPERTY_MOBILE_CERTIFIER_CLOSE_DEMAND_STATUS_ID = "identitystore.mobilecertifier.demandCloseStatusId";
     private static final String PROPERTY_MOBILE_CERTIFIER_DEMAND_TYPE_ID = "identitystore.mobilecertifier.demandTypeId";
@@ -138,14 +139,18 @@ public final class MobileCertifierService
             DEFAULT_CERTIFICATE_LEVEL );
     private static final String SERVICE_NAME = "Mobile Certifier Service";
     private static final String DEMAND_PREFIX = "MOBCERT_";
+    private static final String BEAN_NOTIFICATION_SENDER = "identitystore-mobilecertifier.lib-notifygru.notificationService";
     private static Map<String, ValidationInfos> _mapValidationCodes = new HashMap<String, ValidationInfos>(  );
+    
+    private NotificationService _notifyGruSenderService;
 
     /**
-     * private constructor
+     * constructor
      */
-    private MobileCertifierService(  )
+    public MobileCertifierService(  )
     {
         super(  );
+        _notifyGruSenderService = SpringContextService.getBean( BEAN_NOTIFICATION_SENDER );
     }
 
     /**
@@ -160,23 +165,19 @@ public final class MobileCertifierService
      * @throws fr.paris.lutece.portal.service.security.UserNotSignedException
      *           if no user found
      */
-    public static void startValidation( HttpServletRequest request, String strMobileNumber, int nCustomerId )
+    public void startValidation( HttpServletRequest request, String strMobileNumber, int nCustomerId )
         throws UserNotSignedException
     {
         String strValidationCode = generateValidationCode(  );
+        AppLogService.debug( "MobileCertifierService.startValidation for ["+ nCustomerId + "][" + strMobileNumber + "] with code " + strValidationCode );
 
         if ( AppPropertiesService.getPropertyBoolean( PROPERTY_API_MANAGER_ENABLED, true ) )
         {
-            SendNotificationAsJson senderEndPoint = SendNotificationAsJson.instance(  );
-
             String strNotifyGruCredential = AppPropertiesService.getProperty( PROPERTY_CREDENTIAL_CLIENT_API_MANAGER, "" );
-            String strUrl = AppPropertiesService.getProperty( PROPERTY_SMS_NOTIFIER_ENDPOINT_URL );
-            String strToken = senderEndPoint.getToken( strNotifyGruCredential );
-
-            Map<String, String> headers = new HashMap<String, String>(  );
+            String strSender = AppPropertiesService.getProperty( PROPERTY_NOTIFICATION_SENDER );
             NotifyGruGlobalNotification certifNotif = buildSendSMSCodeNotif( getUserConnectionId( request ),
                     strMobileNumber, nCustomerId, strValidationCode, request.getLocale(  ) );
-            senderEndPoint.send( certifNotif, strToken, headers, strUrl );
+            _notifyGruSenderService.send( certifNotif, strNotifyGruCredential, strSender );
         }
         else
         {
@@ -206,8 +207,9 @@ public final class MobileCertifierService
      *          The validation code
      * @return A validation result
      */
-    public static ValidationResult validate( HttpServletRequest request, String strValidationCode )
+    public ValidationResult validate( HttpServletRequest request, String strValidationCode )
     {
+        AppLogService.debug( "MobileCertifierService.validate with code " + strValidationCode );
         HttpSession session = request.getSession(  );
 
         if ( session == null )
@@ -256,7 +258,7 @@ public final class MobileCertifierService
      * @param locale
      *          the locale
      */
-    private static void certify( ValidationInfos infos, Locale locale )
+    private void certify( ValidationInfos infos, Locale locale )
     {
         AttributeCertifier certifier = AttributeCertifierHome.findByCode( CERTIFIER_CODE );
         AttributeCertificate certificate = new AttributeCertificate(  );
@@ -284,13 +286,9 @@ public final class MobileCertifierService
         {
             NotifyGruGlobalNotification certifNotif = buildCertifiedNotif( infos, locale );
 
-            SendNotificationAsJson senderEndPoint = SendNotificationAsJson.instance(  );
-
             String strNotifyGruCredential = AppPropertiesService.getProperty( PROPERTY_CREDENTIAL_CLIENT_API_MANAGER, "" );
-            String strUrl = AppPropertiesService.getProperty( PROPERTY_SMS_NOTIFIER_ENDPOINT_URL );
-            String strToken = senderEndPoint.getToken( strNotifyGruCredential );
-            Map<String, String> headers = new HashMap<String, String>(  );
-            senderEndPoint.send( certifNotif, strToken, headers, strUrl );
+            String strSender = AppPropertiesService.getProperty( PROPERTY_NOTIFICATION_SENDER );
+            _notifyGruSenderService.send( certifNotif, strNotifyGruCredential, strSender );
         }
         else
         {
@@ -326,12 +324,12 @@ public final class MobileCertifierService
         certifNotif.setNotificationType( AppPropertiesService.getProperty( PROPERTY_MOBILE_CERTIFIER_NOTIFICATION_TYPE ) );
         certifNotif.setCustomerId( infos.getCustomerId(  ) );
 
-        NotifyGruSMSNotification notifSMS = new NotifyGruSMSNotification(  );
+        SMSNotification notifSMS = new SMSNotification(  );
         notifSMS.setMessage( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_CONFIRM_TEXT, locale ) );
         notifSMS.setPhoneNumber( infos.getMobileNumber(  ) );
         certifNotif.setUserSMS( notifSMS );
 
-        NotifyGruGuichetNotification notifDashboard = new NotifyGruGuichetNotification(  );
+        UserDashboardNotification notifDashboard = new UserDashboardNotification(  );
         notifDashboard.setSubject( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_SUBJECT,
                 new String[] { infos.getMobileNumber(  ) }, locale ) );
         notifDashboard.setMessage( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_MESSAGE,
@@ -342,7 +340,7 @@ public final class MobileCertifierService
                 new String[] { infos.getMobileNumber(  ) }, locale ) );
         certifNotif.setUserGuichet( notifDashboard );
 
-        NotifyGruEmailNotification notifEmail = new NotifyGruEmailNotification(  );
+        EmailNotification notifEmail = new EmailNotification(  );
         notifEmail.setMessage( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_EMAIL_MESSAGE,
                 new String[] { infos.getMobileNumber(  ) }, locale ) );
         notifEmail.setSubject( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_EMAIL_SUBJECT,
@@ -352,7 +350,7 @@ public final class MobileCertifierService
         notifEmail.setRecipient( infos.getUserEmail(  ) );
         certifNotif.setUserEmail( notifEmail );
 
-        NotifyGruAgentNotification notifAgent = new NotifyGruAgentNotification(  );
+        AgentNotification notifAgent = new AgentNotification(  );
         notifAgent.setMessage( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_AGENT_MESSAGE,
                 new String[] { infos.getMobileNumber(  ) }, locale ) );
         notifAgent.setStatusText( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_AGENT_STATUS_TEXT,
@@ -382,7 +380,7 @@ public final class MobileCertifierService
         int nCustomerId, String strValidationCode, Locale locale )
     {
         NotifyGruGlobalNotification certifNotif = new NotifyGruGlobalNotification(  );
-        NotifyGruSMSNotification notifSMS = new NotifyGruSMSNotification(  );
+        SMSNotification notifSMS = new SMSNotification(  );
         notifSMS.setMessage( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_TEXT,
                 new String[] { strValidationCode }, locale ) );
         notifSMS.setPhoneNumber( strMobileNumber );
