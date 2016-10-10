@@ -89,8 +89,6 @@ public class MobileCertifierService
     private static final String PROPERTY_API_MANAGER_ENABLED = "identitystore.mobilecertifier.apiManager.enabled";
     private static final String PROPERTY_ATTRIBUTE = "identitystore.mobilecertifier.attribute";
     private static final String PROPERTY_CERTIFIER_CODE = "identitystore.mobilecertifier.certifierCode";
-    private static final String PROPERTY_CREDENTIAL_CLIENT_API_MANAGER = "identitystore.mobilecertifier.apiManagerCredential";
-    private static final String PROPERTY_NOTIFICATION_SENDER = "identitystore.mobilecertifier.notificationSender";
     private static final String PROPERTY_MOBILE_CERTIFIER_CLOSE_CRM_STATUS_ID = "identitystore.mobilecertifier.crmCloseStatusId";
     private static final String PROPERTY_MOBILE_CERTIFIER_CLOSE_DEMAND_STATUS_ID = "identitystore.mobilecertifier.demandCloseStatusId";
     private static final String PROPERTY_MOBILE_CERTIFIER_DEMAND_TYPE_ID = "identitystore.mobilecertifier.demandTypeId";
@@ -173,11 +171,9 @@ public class MobileCertifierService
 
         if ( AppPropertiesService.getPropertyBoolean( PROPERTY_API_MANAGER_ENABLED, true ) )
         {
-            String strNotifyGruCredential = AppPropertiesService.getProperty( PROPERTY_CREDENTIAL_CLIENT_API_MANAGER, "" );
-            String strSender = AppPropertiesService.getProperty( PROPERTY_NOTIFICATION_SENDER );
             NotifyGruGlobalNotification certifNotif = buildSendSMSCodeNotif( getUserConnectionId( request ),
                     strMobileNumber, nCustomerId, strValidationCode, request.getLocale(  ) );
-            _notifyGruSenderService.send( certifNotif, strNotifyGruCredential, strSender );
+            _notifyGruSenderService.send( certifNotif );
         }
         else
         {
@@ -286,9 +282,7 @@ public class MobileCertifierService
         {
             NotifyGruGlobalNotification certifNotif = buildCertifiedNotif( infos, locale );
 
-            String strNotifyGruCredential = AppPropertiesService.getProperty( PROPERTY_CREDENTIAL_CLIENT_API_MANAGER, "" );
-            String strSender = AppPropertiesService.getProperty( PROPERTY_NOTIFICATION_SENDER );
-            _notifyGruSenderService.send( certifNotif, strNotifyGruCredential, strSender );
+            _notifyGruSenderService.send( certifNotif );
         }
         else
         {
