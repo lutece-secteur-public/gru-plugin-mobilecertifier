@@ -54,11 +54,11 @@ import fr.paris.lutece.plugins.identitystore.business.IdentityHome;
 import fr.paris.lutece.plugins.identitystore.service.ChangeAuthor;
 import fr.paris.lutece.plugins.identitystore.service.IdentityStoreService;
 import fr.paris.lutece.plugins.identitystore.web.service.AuthorType;
-import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.AgentNotification;
-import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.EmailNotification;
-import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.NotifyGruGlobalNotification;
-import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.SMSNotification;
-import fr.paris.lutece.plugins.librarynotifygru.business.notifygru.UserDashboardNotification;
+import fr.paris.lutece.plugins.grubusiness.business.notification.BackofficeNotification;
+import fr.paris.lutece.plugins.grubusiness.business.notification.EmailNotification;
+import fr.paris.lutece.plugins.grubusiness.business.notification.NotifyGruGlobalNotification;
+import fr.paris.lutece.plugins.grubusiness.business.notification.SMSNotification;
+import fr.paris.lutece.plugins.grubusiness.business.notification.UserDashboardNotification;
 import fr.paris.lutece.plugins.librarynotifygru.services.NotificationService;
 import fr.paris.lutece.portal.service.i18n.I18nService;
 import fr.paris.lutece.portal.service.security.LuteceUser;
@@ -332,7 +332,7 @@ public class MobileCertifierService
         notifDashboard.setSenderName( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_SENDER_NAME, locale ) );
         notifDashboard.setData( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_DATA,
                 new String[] { infos.getMobileNumber(  ) }, locale ) );
-        certifNotif.setUserGuichet( notifDashboard );
+        certifNotif.setUserDashboard( notifDashboard );
 
         EmailNotification notifEmail = new EmailNotification(  );
         notifEmail.setMessage( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_EMAIL_MESSAGE,
@@ -344,12 +344,12 @@ public class MobileCertifierService
         notifEmail.setRecipient( infos.getUserEmail(  ) );
         certifNotif.setUserEmail( notifEmail );
 
-        AgentNotification notifAgent = new AgentNotification(  );
+        BackofficeNotification notifAgent = new BackofficeNotification(  );
         notifAgent.setMessage( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_AGENT_MESSAGE,
                 new String[] { infos.getMobileNumber(  ) }, locale ) );
         notifAgent.setStatusText( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_AGENT_STATUS_TEXT,
                 new String[] { infos.getMobileNumber(  ) }, locale ) );
-        certifNotif.setUserAgent( notifAgent );
+        certifNotif.setBackofficeLogging( notifAgent );
 
         return certifNotif;
     }
