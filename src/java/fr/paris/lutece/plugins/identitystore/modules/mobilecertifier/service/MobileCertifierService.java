@@ -33,7 +33,32 @@
  */
 package fr.paris.lutece.plugins.identitystore.modules.mobilecertifier.service;
 
+import fr.paris.lutece.plugins.grubusiness.business.notification.BackofficeNotification;
+import fr.paris.lutece.plugins.grubusiness.business.notification.EmailNotification;
+import fr.paris.lutece.plugins.grubusiness.business.notification.NotifyGruGlobalNotification;
+import fr.paris.lutece.plugins.grubusiness.business.notification.SMSNotification;
+import fr.paris.lutece.plugins.grubusiness.business.notification.UserDashboardNotification;
+import fr.paris.lutece.plugins.identitystore.business.AttributeCertificate;
+import fr.paris.lutece.plugins.identitystore.business.AttributeCertifier;
+import fr.paris.lutece.plugins.identitystore.business.AttributeCertifierHome;
+import fr.paris.lutece.plugins.identitystore.business.Identity;
+import fr.paris.lutece.plugins.identitystore.business.IdentityHome;
+import fr.paris.lutece.plugins.identitystore.service.ChangeAuthor;
+import fr.paris.lutece.plugins.identitystore.service.IdentityStoreService;
+import fr.paris.lutece.plugins.identitystore.web.service.AuthorType;
+import fr.paris.lutece.plugins.librarynotifygru.services.NotificationService;
+import fr.paris.lutece.portal.service.i18n.I18nService;
+import fr.paris.lutece.portal.service.security.LuteceUser;
+import fr.paris.lutece.portal.service.security.SecurityService;
+import fr.paris.lutece.portal.service.security.UserNotSignedException;
+import fr.paris.lutece.portal.service.spring.SpringContextService;
+import fr.paris.lutece.portal.service.util.AppLogService;
+import fr.paris.lutece.portal.service.util.AppPropertiesService;
+
+import org.apache.commons.lang.RandomStringUtils;
+
 import java.sql.Timestamp;
+
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -43,30 +68,6 @@ import java.util.Random;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
-
-import org.apache.commons.lang.RandomStringUtils;
-
-import fr.paris.lutece.plugins.identitystore.business.AttributeCertificate;
-import fr.paris.lutece.plugins.identitystore.business.AttributeCertifier;
-import fr.paris.lutece.plugins.identitystore.business.AttributeCertifierHome;
-import fr.paris.lutece.plugins.identitystore.business.Identity;
-import fr.paris.lutece.plugins.identitystore.business.IdentityHome;
-import fr.paris.lutece.plugins.identitystore.service.ChangeAuthor;
-import fr.paris.lutece.plugins.identitystore.service.IdentityStoreService;
-import fr.paris.lutece.plugins.identitystore.web.service.AuthorType;
-import fr.paris.lutece.plugins.grubusiness.business.notification.BackofficeNotification;
-import fr.paris.lutece.plugins.grubusiness.business.notification.EmailNotification;
-import fr.paris.lutece.plugins.grubusiness.business.notification.NotifyGruGlobalNotification;
-import fr.paris.lutece.plugins.grubusiness.business.notification.SMSNotification;
-import fr.paris.lutece.plugins.grubusiness.business.notification.UserDashboardNotification;
-import fr.paris.lutece.plugins.librarynotifygru.services.NotificationService;
-import fr.paris.lutece.portal.service.i18n.I18nService;
-import fr.paris.lutece.portal.service.security.LuteceUser;
-import fr.paris.lutece.portal.service.security.SecurityService;
-import fr.paris.lutece.portal.service.security.UserNotSignedException;
-import fr.paris.lutece.portal.service.spring.SpringContextService;
-import fr.paris.lutece.portal.service.util.AppLogService;
-import fr.paris.lutece.portal.service.util.AppPropertiesService;
 
 
 /**
@@ -139,7 +140,6 @@ public class MobileCertifierService
     private static final String DEMAND_PREFIX = "MOBCERT_";
     private static final String BEAN_NOTIFICATION_SENDER = "identitystore-mobilecertifier.lib-notifygru.notificationService";
     private static Map<String, ValidationInfos> _mapValidationCodes = new HashMap<String, ValidationInfos>(  );
-    
     private NotificationService _notifyGruSenderService;
 
     /**
@@ -167,7 +167,8 @@ public class MobileCertifierService
         throws UserNotSignedException
     {
         String strValidationCode = generateValidationCode(  );
-        AppLogService.debug( "MobileCertifierService.startValidation for ["+ nCustomerId + "][" + strMobileNumber + "] with code " + strValidationCode );
+        AppLogService.debug( "MobileCertifierService.startValidation for [" + nCustomerId + "][" + strMobileNumber +
+            "] with code " + strValidationCode );
 
         if ( AppPropertiesService.getPropertyBoolean( PROPERTY_API_MANAGER_ENABLED, true ) )
         {
@@ -206,6 +207,7 @@ public class MobileCertifierService
     public ValidationResult validate( HttpServletRequest request, String strValidationCode )
     {
         AppLogService.debug( "MobileCertifierService.validate with code " + strValidationCode );
+
         HttpSession session = request.getSession(  );
 
         if ( session == null )
@@ -274,9 +276,9 @@ public class MobileCertifierService
         ChangeAuthor author = new ChangeAuthor(  );
         author.setApplication( SERVICE_NAME );
         author.setType( AuthorType.TYPE_USER_OWNER.getTypeValue(  ) );
+
         Identity identity = IdentityHome.findByConnectionId( infos.getUserConnectionId(  ) );
-        IdentityStoreService.setAttribute( identity, ATTRIBUTE_NAME, infos.getMobileNumber(  ),
-            author, certificate );
+        IdentityStoreService.setAttribute( identity, ATTRIBUTE_NAME, infos.getMobileNumber(  ), author, certificate );
 
         if ( AppPropertiesService.getPropertyBoolean( PROPERTY_API_MANAGER_ENABLED, true ) )
         {
@@ -496,12 +498,13 @@ public class MobileCertifierService
      * Enumeration of all validation results
      */
     public enum ValidationResult
-    {        OK( MESSAGE_CODE_VALIDATION_OK ),
+    {
+        OK( MESSAGE_CODE_VALIDATION_OK ),
         INVALID_CODE( MESSAGE_CODE_VALIDATION_INVALID ),
         SESSION_EXPIRED( MESSAGE_SESSION_EXPIRED ),
         CODE_EXPIRED( MESSAGE_CODE_EXPIRED ),
         TOO_MANY_ATTEMPS( MESSAGE_TOO_MANY_ATTEMPS );
-    
+ 
         private String _strMessageKey;
 
         /**
@@ -524,6 +527,5 @@ public class MobileCertifierService
         {
             return _strMessageKey;
         }
-
     }
 }
