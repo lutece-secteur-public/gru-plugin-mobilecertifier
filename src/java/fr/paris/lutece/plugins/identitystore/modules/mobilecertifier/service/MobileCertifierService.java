@@ -158,22 +158,22 @@ public class MobileCertifierService
      *          The HTTP request
      * @param strMobileNumber
      *          The mobile phone number
-     * @param nCustomerId
+     * @param strCustomerId
      *          customer Id
      * @throws fr.paris.lutece.portal.service.security.UserNotSignedException
      *           if no user found
      */
-    public void startValidation( HttpServletRequest request, String strMobileNumber, int nCustomerId )
+    public void startValidation( HttpServletRequest request, String strMobileNumber, String strCustomerId )
         throws UserNotSignedException
     {
         String strValidationCode = generateValidationCode(  );
-        AppLogService.debug( "MobileCertifierService.startValidation for [" + nCustomerId + "][" + strMobileNumber +
+        AppLogService.debug( "MobileCertifierService.startValidation for [" + strCustomerId + "][" + strMobileNumber +
             "] with code " + strValidationCode );
 
         if ( AppPropertiesService.getPropertyBoolean( PROPERTY_API_MANAGER_ENABLED, true ) )
         {
             NotifyGruGlobalNotification certifNotif = buildSendSMSCodeNotif( getUserConnectionId( request ),
-                    strMobileNumber, nCustomerId, strValidationCode, request.getLocale(  ) );
+                    strMobileNumber, strCustomerId, strValidationCode, request.getLocale(  ) );
             _notifyGruSenderService.send( certifNotif );
         }
         else
@@ -190,7 +190,7 @@ public class MobileCertifierService
         infos.setMobileNumber( strMobileNumber );
         infos.setUserConnectionId( getUserConnectionId( request ) );
         infos.setUserEmail( getUserEmail( request ) );
-        infos.setCustomerId( nCustomerId );
+        infos.setCustomerId( strCustomerId );
 
         _mapValidationCodes.put( session.getId(  ), infos );
     }
@@ -364,7 +364,7 @@ public class MobileCertifierService
      *          connection Id
      * @param strMobileNumber
      *          mobile phone number to certify
-     * @param nCustomerId
+     * @param strCustomerId
      *          customerId
      * @param strValidationCode
      *          sms validation code
@@ -373,7 +373,7 @@ public class MobileCertifierService
      * @return NotifyGruGlobalNotification
      */
     private static NotifyGruGlobalNotification buildSendSMSCodeNotif( String strConnectionId, String strMobileNumber,
-        int nCustomerId, String strValidationCode, Locale locale )
+        String strCustomerId, String strValidationCode, Locale locale )
     {
         NotifyGruGlobalNotification certifNotif = new NotifyGruGlobalNotification(  );
         SMSNotification notifSMS = new SMSNotification(  );
@@ -381,7 +381,7 @@ public class MobileCertifierService
                 new String[] { strValidationCode }, locale ) );
         notifSMS.setPhoneNumber( strMobileNumber );
         certifNotif.setGuid( strConnectionId );
-        certifNotif.setCustomerId( Integer.valueOf( nCustomerId ) );
+        certifNotif.setCustomerId( strCustomerId );
         certifNotif.setUserSMS( notifSMS );
         certifNotif.setNotificationDate( new Date(  ).getTime(  ) );
 

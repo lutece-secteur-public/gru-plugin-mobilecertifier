@@ -148,9 +148,7 @@ public class MobileCertifierApp extends MVCApplication
 
         try
         {
-            _mobileCertifierService.startValidation( request, strMobileNumber,
-                ( StringUtils.isNotEmpty( strCustomerId ) && StringUtils.isNumeric( strCustomerId ) )
-                ? Integer.parseInt( strCustomerId ) : ( -1 ) );
+            _mobileCertifierService.startValidation( request, strMobileNumber, strCustomerId );
         }
         catch ( AppException appEx )
         {

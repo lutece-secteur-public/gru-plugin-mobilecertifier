@@ -41,7 +41,7 @@ public class ValidationInfos
 {
     // Variables declarations
     private String _strMobileNumber;
-    private int _strCustomerId;
+    private String _strCustomerId;
     private String _strUserEmail;
     private String _strUserConnectionId;
     private String _strValidationCode;
@@ -131,7 +131,7 @@ public class ValidationInfos
     /**
      * @return the _strCustomerId
      */
-    public int getCustomerId(  )
+    public String getCustomerId(  )
     {
         return _strCustomerId;
     }
@@ -140,7 +140,7 @@ public class ValidationInfos
      * @param strCustomerId
      *          the _strCustomerId to set
      */
-    public void setCustomerId( int strCustomerId )
+    public void setCustomerId( String strCustomerId )
     {
         this._strCustomerId = strCustomerId;
     }
