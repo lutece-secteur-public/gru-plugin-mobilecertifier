@@ -175,8 +175,10 @@ public class MobileCertifierService
 
         if ( AppPropertiesService.getPropertyBoolean( PROPERTY_API_MANAGER_ENABLED, true ) )
         {
+
             Notification certifNotif = buildSendSMSCodeNotif( getUserConnectionId( request ),
                     strMobileNumber, strCustomerId, strValidationCode, request.getLocale(  ) );
+
             _notifyGruSenderService.send( certifNotif );
         }
         else
@@ -310,23 +312,23 @@ public class MobileCertifierService
     {
         Notification certifNotif = new Notification(  );
         certifNotif.setNotificationDate( new Date(  ).getTime(  ) );
-        
-        Demand demand = new Demand( );
+
+        Demand demand = new Demand(  );
         demand.setId( generateDemandId(  ) );
-        demand.setReference( DEMAND_PREFIX + demand.getId( ) );
-        demand.setStatusId( AppPropertiesService.getPropertyInt( 
-                PROPERTY_MOBILE_CERTIFIER_CLOSE_DEMAND_STATUS_ID, DEFAULT_MOBILE_CERTIFIER_DEMAND_CLOSE_STATUS_ID ) );
+        demand.setReference( DEMAND_PREFIX + demand.getId(  ) );
+        demand.setStatusId( AppPropertiesService.getPropertyInt( PROPERTY_MOBILE_CERTIFIER_CLOSE_DEMAND_STATUS_ID,
+                DEFAULT_MOBILE_CERTIFIER_DEMAND_CLOSE_STATUS_ID ) );
         demand.setTypeId( AppPropertiesService.getProperty( PROPERTY_MOBILE_CERTIFIER_DEMAND_TYPE_ID,
                 DEFAULT_MOBILE_CERTIFIER_DEMAND_TYPE_ID ) );
-        
-        Customer customer = new Customer( );
+
+        Customer customer = new Customer(  );
         customer.setId( infos.getCustomerId(  ) );
-        customer.setAccountGuid(  infos.getUserConnectionId(  ) );
-        customer.setEmail( infos.getUserEmail( ) );
+        customer.setAccountGuid( infos.getUserConnectionId(  ) );
+        customer.setEmail( infos.getUserEmail(  ) );
         demand.setCustomer( customer );
-        
-        certifNotif.setDemand(demand);
-        
+
+        certifNotif.setDemand( demand );
+
         SMSNotification notifSMS = new SMSNotification(  );
         notifSMS.setMessage( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_CONFIRM_TEXT, locale ) );
         notifSMS.setPhoneNumber( infos.getMobileNumber(  ) );
@@ -334,7 +336,9 @@ public class MobileCertifierService
 
         DashboardNotification notifDashboard = new DashboardNotification(  );
         notifDashboard.setStatusId( AppPropertiesService.getPropertyInt( 
+
                 PROPERTY_MOBILE_CERTIFIER_CLOSE_CRM_STATUS_ID, DEFAULT_MOBILE_CERTIFIER_CRM_CLOSE_STATUS_ID )  );
+
         notifDashboard.setSubject( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_SUBJECT,
                 new String[] { infos.getMobileNumber(  ) }, locale ) );
         notifDashboard.setMessage( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_MESSAGE,
@@ -345,16 +349,17 @@ public class MobileCertifierService
                 new String[] { infos.getMobileNumber(  ) }, locale ) );
         certifNotif.setUserDashboard( notifDashboard );
 
-        
-        BroadcastNotification broadcastEmail = new BroadcastNotification( );
+
+        BroadcastNotification broadcastEmail = new BroadcastNotification(  );
         broadcastEmail.setMessage( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_EMAIL_MESSAGE,
-        new String[] { infos.getMobileNumber(  ) }, locale ) );
+                new String[] { infos.getMobileNumber(  ) }, locale ) );
         broadcastEmail.setSubject( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_EMAIL_SUBJECT,
-        new String[] { infos.getMobileNumber(  ) }, locale ) );
+                new String[] { infos.getMobileNumber(  ) }, locale ) );
         broadcastEmail.setSenderEmail( AppPropertiesService.getProperty( PROPERTY_GRU_NOTIF_EMAIL_SENDER_MAIL ) );
         broadcastEmail.setSenderName( AppPropertiesService.getProperty( PROPERTY_GRU_NOTIF_EMAIL_SENDER_NAME ) );
-        
-        broadcastEmail.setRecipient(EmailAddress.buildEmailAddresses( new String[] { infos.getUserEmail(  ) } ));
+
+        broadcastEmail.setRecipient( EmailAddress.buildEmailAddresses( new String[] { infos.getUserEmail(  ) } ) );
+
         certifNotif.addBroadcastEmail( broadcastEmail );
 
         BackofficeNotification notifAgent = new BackofficeNotification(  );
@@ -391,8 +396,7 @@ public class MobileCertifierService
         notifSMS.setMessage( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_TEXT,
                 new String[] { strValidationCode }, locale ) );
         notifSMS.setPhoneNumber( strMobileNumber );
-       
-        
+
         certifNotif.setUserSMS( notifSMS );
         certifNotif.setNotificationDate( new Date(  ).getTime(  ) );
 
@@ -514,9 +518,9 @@ public class MobileCertifierService
         INVALID_CODE( MESSAGE_CODE_VALIDATION_INVALID ),
         SESSION_EXPIRED( MESSAGE_SESSION_EXPIRED ),
         CODE_EXPIRED( MESSAGE_CODE_EXPIRED ),
-        TOO_MANY_ATTEMPS( MESSAGE_TOO_MANY_ATTEMPS );
- 
-        private String _strMessageKey;
+        TOO_MANY_ATTEMPS( MESSAGE_TOO_MANY_ATTEMPS );	    	
+    	
+    	private String _strMessageKey;
 
         /**
          * Constructor
@@ -538,5 +542,6 @@ public class MobileCertifierService
         {
             return _strMessageKey;
         }
+
     }
 }
