@@ -311,7 +311,7 @@ public class MobileCertifierService
     private static Notification buildCertifiedNotif( ValidationInfos infos, Locale locale )
     {
         Notification certifNotif = new Notification(  );
-        certifNotif.setNotificationDate( new Date(  ).getTime(  ) );
+        certifNotif.setDate( new Date(  ).getTime(  ) );
 
         Demand demand = new Demand(  );
         demand.setId( generateDemandId(  ) );
@@ -323,7 +323,7 @@ public class MobileCertifierService
 
         Customer customer = new Customer(  );
         customer.setId( infos.getCustomerId(  ) );
-        customer.setAccountGuid( infos.getUserConnectionId(  ) );
+        customer.setConnectionId( infos.getUserConnectionId(  ) );
         customer.setEmail( infos.getUserEmail(  ) );
         demand.setCustomer( customer );
 
@@ -332,7 +332,7 @@ public class MobileCertifierService
         SMSNotification notifSMS = new SMSNotification(  );
         notifSMS.setMessage( I18nService.getLocalizedString( MESSAGE_SMS_VALIDATION_CONFIRM_TEXT, locale ) );
         notifSMS.setPhoneNumber( infos.getMobileNumber(  ) );
-        certifNotif.setUserSMS( notifSMS );
+        certifNotif.setSmsNotification( notifSMS );
 
         MyDashboardNotification notifDashboard = new MyDashboardNotification(  );
         notifDashboard.setStatusId( AppPropertiesService.getPropertyInt( 
@@ -347,7 +347,7 @@ public class MobileCertifierService
         notifDashboard.setSenderName( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_SENDER_NAME, locale ) );
         notifDashboard.setData( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_DASHBOARD_DATA,
                 new String[] { infos.getMobileNumber(  ) }, locale ) );
-        certifNotif.setUserDashboard( notifDashboard );
+        certifNotif.setMyDashboardNotification( notifDashboard );
 
 
         BroadcastNotification broadcastEmail = new BroadcastNotification(  );
@@ -367,7 +367,7 @@ public class MobileCertifierService
                 new String[] { infos.getMobileNumber(  ) }, locale ) );
         notifAgent.setStatusText( I18nService.getLocalizedString( MESSAGE_GRU_NOTIF_AGENT_STATUS_TEXT,
                 new String[] { infos.getMobileNumber(  ) }, locale ) );
-        certifNotif.setBackofficeLogging( notifAgent );
+        certifNotif.setBackofficeNotification( notifAgent );
 
         return certifNotif;
     }
@@ -397,8 +397,8 @@ public class MobileCertifierService
                 new String[] { strValidationCode }, locale ) );
         notifSMS.setPhoneNumber( strMobileNumber );
 
-        certifNotif.setUserSMS( notifSMS );
-        certifNotif.setNotificationDate( new Date(  ).getTime(  ) );
+        certifNotif.setSmsNotification( notifSMS );
+        certifNotif.setDate( new Date(  ).getTime(  ) );
 
         return certifNotif;
     }
