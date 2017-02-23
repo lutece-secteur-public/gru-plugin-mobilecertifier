@@ -11,7 +11,7 @@
     <artifactId>module-identitystore-mobilecertifier</artifactId>
     <packaging>lutece-plugin</packaging>
     <version>1.0.0-SNAPSHOT</version>
-    <name>Lutece IdentityStore MobileCertifier module</name>
+    <name>Lutece identitystore mobilecertifier module</name>
 
     <repositories>
         <repository>
@@ -32,6 +32,12 @@
         <dependency>
             <groupId>fr.paris.lutece.plugins</groupId>
             <artifactId>plugin-identitystore</artifactId>
+            <version>[1.0.0-SNAPSHOT,)</version>
+            <type>lutece-plugin</type>
+        </dependency>
+        <dependency>
+            <groupId>fr.paris.lutece.plugins</groupId>
+            <artifactId>library-identitystore</artifactId>
             <version>[1.0.0-SNAPSHOT,)</version>
             <type>lutece-plugin</type>
         </dependency>

@@ -22,11 +22,11 @@
     </bean>
     <bean id="identitystore-mobilecertifier.lib-notifygru.restTransport" class="fr.paris.lutece.plugins.librarynotifygru.rs.service.NotificationTransportRest">
         <property name="notificationEndPoint">
-            <value>http://127.0.0.1:9092/lutece/rest/notification/send</value>
+            <value>http://localhost:8080/lutece/rest/notification/send</value>
         </property>
     </bean> 
     <bean id="identitystore-mobilecertifier.lib-notifygru.notificationService" class="fr.paris.lutece.plugins.librarynotifygru.services.NotificationService">
-        <constructor-arg ref="workflow-notifygru.lib-notifygru.apiManagerTransport"/>
+        <constructor-arg ref="identitystore-mobilecertifier.lib-notifygru.apiManagerTransport"/>
     </bean> 
     
 
