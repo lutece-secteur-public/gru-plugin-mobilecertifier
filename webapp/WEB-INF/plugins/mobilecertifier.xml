@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="ISO-8859-1" standalone="no"?><plug-in>
-    <name>identitystore-mobilecertifier</name>
-    <class>fr.paris.lutece.plugins.identitystore.modules.mobilecertifier.IdentityStoreMobileCertifierPlugin</class>
+    <name>mobilecertifier</name>
+    <class>fr.paris.lutece.plugins.mobilecertifier.MobileCertifierPlugin</class>
     <version>1.0.0-SNAPSHOT</version>
     <documentation/>
     <installation/>
     <changes/>
     <user-guide/>
-    <description>module.identitystore.mobilecertifier.module.description</description>
-    <provider>module.identitystore.mobilecertifier.module.provider</provider>
+    <description>mobilecertifier.module.description</description>
+    <provider>mobilecertifier.module.provider</provider>
     <provider-url>http://dev.lutece.paris.fr</provider-url>
     <icon-url>images/admin/skin/feature_default_icon.png</icon-url>
     <copyright>Copyright (c) 2016 Mairie de Paris</copyright>
@@ -27,7 +27,7 @@
     <applications>
          <application>
             <application-id>mobilecertifier</application-id>
-            <application-class>fr.paris.lutece.plugins.identitystore.modules.mobilecertifier.web.MobileCertifierApp</application-class>
+            <application-class>fr.paris.lutece.plugins.mobilecertifier.web.MobileCertifierApp</application-class>
         </application>
     </applications>
 </plug-in>

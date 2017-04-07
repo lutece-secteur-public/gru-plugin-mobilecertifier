@@ -1,1 +1,1 @@
-# gru-module-identitystore-mobilecertifier
+# gru-plugin-mobilecertifier

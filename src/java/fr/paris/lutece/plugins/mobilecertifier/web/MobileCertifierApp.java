@@ -31,10 +31,10 @@
  *
  * License 1.0
  */
-package fr.paris.lutece.plugins.identitystore.modules.mobilecertifier.web;
+package fr.paris.lutece.plugins.mobilecertifier.web;
 
-import fr.paris.lutece.plugins.identitystore.modules.mobilecertifier.service.MobileCertifierService;
-import fr.paris.lutece.plugins.identitystore.modules.mobilecertifier.service.MobileCertifierService.ValidationResult;
+import fr.paris.lutece.plugins.mobilecertifier.service.MobileCertifierService;
+import fr.paris.lutece.plugins.mobilecertifier.service.MobileCertifierService.ValidationResult;
 import fr.paris.lutece.portal.service.security.LuteceUser;
 import fr.paris.lutece.portal.service.security.SecurityService;
 import fr.paris.lutece.portal.service.security.UserNotSignedException;
@@ -47,8 +47,6 @@ import fr.paris.lutece.portal.util.mvc.xpage.annotations.Controller;
 import fr.paris.lutece.portal.web.l10n.LocaleService;
 import fr.paris.lutece.portal.web.xpages.XPage;
 
-import org.apache.commons.lang.StringUtils;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -60,16 +58,16 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * Mobile Certifier App
  */
-@Controller( xpageName = "mobilecertifier", pageTitleI18nKey = "module.identitystore.mobilecertifier.xpage.mobilecertifier.pageTitle", pagePathI18nKey = "module.identitystore.mobilecertifier.xpage.mobilecertifier.pagePathLabel" )
+@Controller( xpageName = "mobilecertifier", pageTitleI18nKey = "mobilecertifier.xpage.mobilecertifier.pageTitle", pagePathI18nKey = "mobilecertifier.xpage.mobilecertifier.pagePathLabel" )
 public class MobileCertifierApp extends MVCApplication
 {
     private static final long serialVersionUID = 1L;
-    private static final String TEMPLATE_HOME = "skin/plugins/identitystore/modules/mobilecertifier/home.html";
-    private static final String TEMPLATE_VALIDATION_CODE = "skin/plugins/identitystore/modules/mobilecertifier/validation_code.html";
-    private static final String TEMPLATE_AJAX_VALIDATION_CODE = "skin/plugins/identitystore/modules/mobilecertifier/ajax/validation_code.html";
-    private static final String TEMPLATE_VALIDATION_OK = "skin/plugins/identitystore/modules/mobilecertifier/validation_ok.html";
-    private static final String TEMPLATE_AJAX_VALIDATION_OK = "skin/plugins/identitystore/modules/mobilecertifier/ajax/validation_ok.html";
-    private static final String TEMPLATE_AJAX_VALIDATION_KO = "skin/plugins/identitystore/modules/mobilecertifier/ajax/validation_ko.html";
+    private static final String TEMPLATE_HOME = "skin/plugins/mobilecertifier/home.html";
+    private static final String TEMPLATE_VALIDATION_CODE = "skin/plugins/mobilecertifier/validation_code.html";
+    private static final String TEMPLATE_AJAX_VALIDATION_CODE = "skin/plugins/mobilecertifier/ajax/validation_code.html";
+    private static final String TEMPLATE_VALIDATION_OK = "skin/plugins/mobilecertifier/validation_ok.html";
+    private static final String TEMPLATE_AJAX_VALIDATION_OK = "skin/plugins/mobilecertifier/ajax/validation_ok.html";
+    private static final String TEMPLATE_AJAX_VALIDATION_KO = "skin/plugins/mobilecertifier/ajax/validation_ko.html";
     private static final String VIEW_HOME = "home";
     private static final String VIEW_VALIDATION_CODE = "validationCode";
     private static final String VIEW_VALIDATION_OK = "validationOK";
@@ -80,9 +78,9 @@ public class MobileCertifierApp extends MVCApplication
     private static final String PARAMETER_VIEW_MODE = "view_mode";
     private static final String PARAMETER_CUSTOMER_ID = "cid";
     private static final String PATTERN_PHONE = "(\\d{10})$";
-    private static final String PROPERTY_PATTERN = "module.identitystore.mobilecertifier.numbervalidation.regexp";
-    private static final String MESSAGE_KEY_INVALID_NUMBER = "module.identitystore.mobilecertifier.message.invalidNumber";
-    private static final String MESSAGE_CODE_VALIDATION_SEND_ERROR = "module.identitystore.mobilecertifier.message.codeValidationSendError";
+    private static final String PROPERTY_PATTERN = "mobilecertifier.numbervalidation.regexp";
+    private static final String MESSAGE_KEY_INVALID_NUMBER = "mobilecertifier.message.invalidNumber";
+    private static final String MESSAGE_CODE_VALIDATION_SEND_ERROR = "mobilecertifier.message.codeValidationSendError";
     private static final String AJAX_MODE = "ajax";
     private MobileCertifierService _mobileCertifierService;
 

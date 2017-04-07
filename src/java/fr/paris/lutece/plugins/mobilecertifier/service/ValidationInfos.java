@@ -31,7 +31,7 @@
  *
  * License 1.0
  */
-package fr.paris.lutece.plugins.identitystore.modules.mobilecertifier.service;
+package fr.paris.lutece.plugins.mobilecertifier.service;
 
 
 /**

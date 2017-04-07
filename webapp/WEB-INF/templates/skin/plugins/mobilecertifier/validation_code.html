@@ -1,17 +1,17 @@
 <form action="jsp/site/Portal.jsp" method="post" >
     <input type="hidden" name="page" value="mobilecertifier" >
     <input type="hidden" name="action" value="validateCode" >
-    <h1>#i18n{module.identitystore.mobilecertifier.home.pageTitle}</h1>
+    <h1>#i18n{mobilecertifier.home.pageTitle}</h1>
     
     <p>
-        #i18n{module.identitystore.mobilecertifier.validation_code.message}
+        #i18n{mobilecertifier.validation_code.message}
     </p>
 
     <@messages errors=errors />
 
-    #i18n{module.identitystore.mobilecertifier.validation_code.labelCode} :
+    #i18n{mobilecertifier.validation_code.labelCode} :
     <input type="text" name="validation_code">
     <button class="btn btn-primary" type="submit">
-        #i18n{module.identitystore.mobilecertifier.validation_code.buttonSubmit}
+        #i18n{mobilecertifier.validation_code.buttonSubmit}
     </button>
 </form>

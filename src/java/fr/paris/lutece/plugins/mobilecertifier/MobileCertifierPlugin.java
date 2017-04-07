@@ -31,7 +31,7 @@
  *
  * License 1.0
  */
-package fr.paris.lutece.plugins.identitystore.modules.mobilecertifier;
+package fr.paris.lutece.plugins.mobilecertifier;
 
 import fr.paris.lutece.portal.service.plugin.Plugin;
 import fr.paris.lutece.portal.service.plugin.PluginDefaultImplementation;
@@ -40,12 +40,12 @@ import fr.paris.lutece.portal.service.plugin.PluginService;
 
 /**
  *
- * IdentityStoreMobileCertifierPlugin
+ * MobileCertifierPlugin
  *
  */
-public class IdentityStoreMobileCertifierPlugin extends PluginDefaultImplementation
+public class MobileCertifierPlugin extends PluginDefaultImplementation
 {
-    public static final String PLUGIN_NAME = "identitystore-mobilecertifier";
+    public static final String PLUGIN_NAME = "mobilecertifier";
     public static final String BEAN_TRANSACTION_MANAGER = PLUGIN_NAME + ".transactionManager";
 
     /**
