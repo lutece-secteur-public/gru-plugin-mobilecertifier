@@ -43,8 +43,10 @@ import fr.paris.lutece.plugins.grubusiness.business.notification.MyDashboardNoti
 import fr.paris.lutece.plugins.grubusiness.business.notification.EmailAddress;
 import fr.paris.lutece.plugins.identitystore.web.rs.dto.AttributeDto;
 import fr.paris.lutece.plugins.identitystore.web.rs.dto.AuthorDto;
+import fr.paris.lutece.plugins.identitystore.web.rs.dto.CertificateDto;
 import fr.paris.lutece.plugins.identitystore.web.rs.dto.IdentityChangeDto;
 import fr.paris.lutece.plugins.identitystore.web.rs.dto.IdentityDto;
+import fr.paris.lutece.plugins.identitystore.web.service.AuthorType;
 import fr.paris.lutece.plugins.identitystore.web.service.IdentityService;
 import fr.paris.lutece.plugins.librarynotifygru.services.NotificationService;
 import fr.paris.lutece.portal.service.i18n.I18nService;
@@ -55,6 +57,7 @@ import fr.paris.lutece.portal.service.spring.SpringContextService;
 import fr.paris.lutece.portal.service.util.AppLogService;
 import fr.paris.lutece.portal.service.util.AppPropertiesService;
 
+import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.lang.RandomStringUtils;
 
 import java.sql.Timestamp;
@@ -268,9 +271,11 @@ public class MobileCertifierService
 
         AuthorDto author = new AuthorDto( );
         author.setApplicationCode( APPLICATION_CLIENT_CODE );
+        author.setType( AuthorType.TYPE_USER_OWNER.getTypeValue( ) );
+        author.setId( AuthorDto.USER_DEFAULT_ID );
         identityChange.setAuthor( author );
 
-        identityService.certifyAttributes( identityChange, CERTIFIER_CODE );
+        identityService.updateIdentity( identityChange, new HashMap<String, FileItem>( ) );
     }
 
     /**
@@ -451,6 +456,8 @@ public class MobileCertifierService
         AttributeDto attribute = new AttributeDto( );
         attribute.setKey( strKey );
         attribute.setValue( strValue );
+        CertificateDto certificateDto = new CertificateDto( );
+        certificateDto.setCertifierCode( CERTIFIER_CODE );
         map.put( attribute.getKey( ), attribute );
     }
 }
